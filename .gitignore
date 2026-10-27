@@ -20,6 +20,8 @@ test-results/
 !examples/demo/data/*.bigWig
 !apps/web/public/demo/tracks/*.bw
 !apps/web/public/demo/tracks/*.bigWig
+!examples/synthetic_experiment/tracks/*.bw
+!apps/web/public/demo/experiment/tracks/*.bw
 *.sqlite
 *.db
 *.zip
