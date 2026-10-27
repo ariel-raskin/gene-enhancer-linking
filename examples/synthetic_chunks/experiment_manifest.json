@@ -1,0 +1,128 @@
+{
+  "schema_version": 2,
+  "product": "GEL Web",
+  "experimentId": "synthetic-chunks",
+  "assembly": "synthetic-chunks-v1",
+  "annotationProvenance": "artificial genes",
+  "model": "",
+  "normalization": "synthetic shared scale",
+  "scope": {
+    "chrom": "chrA",
+    "start": 0,
+    "end": 10103
+  },
+  "genomicScope": {
+    "version": 1,
+    "mode": "genome",
+    "chromosomes": [
+      "chrA"
+    ],
+    "excludedContigs": []
+  },
+  "execution": {
+    "chunkBases": 1000,
+    "queryConcurrency": 1,
+    "maxPairs": 100000
+  },
+  "regionalStatistics": false,
+  "samples": [],
+  "conditions": [
+    {
+      "id": "control",
+      "label": "control"
+    },
+    {
+      "id": "treatment",
+      "label": "treatment"
+    }
+  ],
+  "contrasts": [
+    {
+      "id": "synthetic_chunks",
+      "label": "Boundary synthetic 1h",
+      "control": "control",
+      "treatment": "treatment",
+      "perturbation": "synthetic",
+      "timePoint": "1h",
+      "confirmed": false,
+      "excluded": false,
+      "assembly": "synthetic-chunks-v1",
+      "trackAssembly": "synthetic-chunks-v1",
+      "model": "",
+      "normalization": "synthetic identical scale; negative minus",
+      "controlSampleIds": [],
+      "treatmentSampleIds": [],
+      "controlTrackSampleIds": [],
+      "treatmentTrackSampleIds": [],
+      "controlTrackSource": "averaged",
+      "treatmentTrackSource": "averaged",
+      "mode": "bigwig",
+      "statisticalSource": "auto",
+      "bindings": {
+        "controlPlus": "control.plus.bw",
+        "controlMinus": "control.minus.bw",
+        "treatmentPlus": "treatment.plus.bw",
+        "treatmentMinus": "treatment.minus.bw",
+        "annotation": "genes.tsv"
+      },
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open",
+      "enhancerCoordinates": "",
+      "proposedFrom": "synthetic manifest",
+      "fileIds": [
+        "control.plus.bw",
+        "control.minus.bw",
+        "treatment.plus.bw",
+        "treatment.minus.bw",
+        "genes.tsv"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "id": "control.plus.bw",
+      "path": "synthetic_chunks/control.plus.bw",
+      "role": "controlPlus",
+      "size": 427,
+      "lastModified": 0,
+      "recognition": "synthetic",
+      "evidence": []
+    },
+    {
+      "id": "control.minus.bw",
+      "path": "synthetic_chunks/control.minus.bw",
+      "role": "controlMinus",
+      "size": 431,
+      "lastModified": 0,
+      "recognition": "synthetic",
+      "evidence": []
+    },
+    {
+      "id": "treatment.plus.bw",
+      "path": "synthetic_chunks/treatment.plus.bw",
+      "role": "treatmentPlus",
+      "size": 434,
+      "lastModified": 0,
+      "recognition": "synthetic",
+      "evidence": []
+    },
+    {
+      "id": "treatment.minus.bw",
+      "path": "synthetic_chunks/treatment.minus.bw",
+      "role": "treatmentMinus",
+      "size": 431,
+      "lastModified": 0,
+      "recognition": "synthetic",
+      "evidence": []
+    },
+    {
+      "id": "genes.tsv",
+      "path": "synthetic_chunks/genes.tsv",
+      "role": "annotation",
+      "size": 219,
+      "lastModified": 0,
+      "recognition": "synthetic",
+      "evidence": []
+    }
+  ]
+}

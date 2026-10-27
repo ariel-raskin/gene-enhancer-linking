@@ -1,0 +1,8 @@
+gene_id	symbol	chrom	start	end	strand
+START	START	chrA	0	160	+
+NEG	NEG	chrA	1500	1900	-
+OVER	OVER	chrA	2900	3200	+
+NEAR	NEAR	chrA	4200	4700	-
+END	END	chrA	10060	10103	-
+B	B	chrB	1000	1800	+
+EMPTY	EMPTY	chrEmpty	1	501	+

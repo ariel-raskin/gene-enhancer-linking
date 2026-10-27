@@ -1,6 +1,7 @@
 import { type Parameters } from "./analysis";
 import { type ExportInput } from "./exports";
 import { executeAnalysis, type AnalysisRequest } from "./execute-analysis";
+import { ChunkCache } from "./chunked-bigwig";
 import { AnalysisCache } from "./analysis-cache";
 import { assessContrast, requestsForContrast, MAX_CONTRASTS, MAX_EXPERIMENT_ROWS, MAX_RESULT_BYTES, type Experiment, type Outcome } from "./experiment";
 
@@ -9,7 +10,8 @@ export async function runExperiment(exp: Experiment, files: Record<string, File>
   emit: (event: ExperimentEvent) => void, execute?: (request: AnalysisRequest, report: (message: string) => void) => Promise<ExportInput>, signal?: AbortSignal) {
   if (exp.contrasts.length > MAX_CONTRASTS) throw new Error(`At most ${MAX_CONTRASTS} contrasts per experiment.`);
   if (Object.values(parameters).some(v=>typeof v==="number"&&(!Number.isFinite(v)||v<0)) || parameters.maxPadj>1 || parameters.peakBinBp<1 || parameters.maxDistanceBp<1 || parameters.pseudocount<=0) throw new Error("Analysis thresholds must be finite and valid; distance, bin size and pseudocount must be positive, and adjusted p-value must be between 0 and 1.");
-  const cache = new AnalysisCache(); const perform = execute ?? ((req, report) => executeAnalysis(req, report, cache));
+  const cache = new AnalysisCache(); const chunkCache = new ChunkCache(); const perform = execute ?? ((req, report) => executeAnalysis(req, report, cache, signal, chunkCache));
+  const referenceLengths=new Map<string,number>();
   const outcomes: Outcome[] = []; let rows = 0, bytes = 0;
   for (const c of exp.contrasts) {
     const assessment = assessContrast(c, exp); const initial = { contrastId: c.id, status: assessment.status, findings: assessment.findings };
@@ -35,13 +37,19 @@ export async function runExperiment(exp: Experiment, files: Record<string, File>
       }
       result.validation={...result.validation,experimentProvenanceWarnings:assessment.warnings};
       if (results.length > 1) { result.trackEvidence = results[1]; result.validation = { ...result.validation, compatibility:{status:"Compatibility unverified",checks:[{name:"Separate evidence",status:"unverified",detail:"Track and model effects retained separately. No statistics propagated by overlap."}]}, warnings:[...(result.validation.warnings as string[] ?? []),"Combined sources remain separate; matching user declarations do not independently verify compatibility."] }; }
+      const observedLengths=new Map<string,number>();
+      for(const layer of results)for(const [chrom,length] of Object.entries((layer.validation.chromosomeSizes??{}) as Record<string,number>)){
+        if(referenceLengths.has(chrom)&&referenceLengths.get(chrom)!==length)throw new Error(`Incompatible chromosome length across contrasts: ${chrom}. Earlier valid results are preserved.`);
+        observedLengths.set(chrom,length);
+      }
       const addedRows = result.links.length + (result.trackEvidence?.links.length ?? 0);
       const addedBytes = JSON.stringify(result).length * 2;
       if (rows + addedRows > MAX_EXPERIMENT_ROWS || bytes + addedBytes > MAX_RESULT_BYTES) throw new Error("Experiment retained-output budget exceeded (200,000 links or 128 MiB serialized-size estimate). Narrow the region or select fewer contrasts. Earlier successes are retained.");
+      for(const [chrom,length] of observedLengths)referenceLengths.set(chrom,length);
       rows += addedRows; bytes += addedBytes;
       outcome={contrastId:c.id,status:"successful",findings:assessment.warnings,result,elapsedMs:Math.round(performance.now()-started),resultBytes:addedBytes};
     } catch (error) { outcome={contrastId:c.id,status:signal?.aborted?"cancelled":"failed",findings:[error instanceof Error?error.message:String(error)],elapsedMs:Math.round(performance.now()-started)}; }
     outcomes.push(outcome); emit({type:"state",outcome,completed:outcomes.length,total:exp.contrasts.length});
   }
-  return { outcomes, resources:{retainedRows:rows,retainedResultBytesEstimate:bytes,cacheTextBytes:cache.textBytes,cacheSignalBytesEstimate:cache.blockBytes,cacheHits:cache.hits,concurrentAnalyses:1} };
+  return { outcomes, resources:{retainedRows:rows,retainedResultBytesEstimate:bytes,cacheTextBytes:cache.textBytes,cacheSignalBytesEstimate:cache.blockBytes,cacheHits:cache.hits,chunkCacheBytes:chunkCache.bytes,chunkCacheHits:chunkCache.hits,concurrentAnalyses:1} };
 }

@@ -3,12 +3,14 @@ import { readLocalText } from "./read-local-text";
 import { BigWig } from "@gmod/bbi";
 import { BlobFile } from "generic-filehandle2";
 import { buildLinks, importGenes, type Differential, type Parameters } from "./analysis";
+import type { GenomicScope, ExecutionLimits } from "./genomic-scope";
 
 export type BigWigRequest = {
   files: { controlPlus: File; controlMinus: File; treatmentPlus: File; treatmentMinus: File };
   annotationFile: File; annotationFormat: "gtf" | "gff" | "tsv" | "bed" | "saf"; annotationCoordinates: "zero_based_half_open" | "one_based_inclusive";
   genomeAssembly: string; normalization: string; contrast: string;
   region: { chrom: string; start: number; end: number }; parameters: Parameters;
+  genomicScope?: GenomicScope; execution?: ExecutionLimits;
 };
 
 type Wig = InstanceType<typeof BigWig>;
@@ -17,7 +19,7 @@ const MAX_FILE_BYTES = 1024 * 1024 * 1024;
 const MAX_QUERY_BYTES = 64 * 1024 * 1024;
 const MAX_ANNOTATION_BYTES = 150 * 1024 * 1024;
 
-function integrate(blocks: SignalBlock[], start: number, end: number) {
+export function integrate(blocks: SignalBlock[], start: number, end: number) {
   let sum = 0, low = 0, high = blocks.length;
   while (low < high) { const mid = (low + high) >>> 1; if (blocks[mid].end <= start) low = mid + 1; else high = mid; }
   for (let index = low; index < blocks.length && blocks[index].start < end; index++) {
@@ -43,9 +45,13 @@ function mergeActive(start: number, end: number, values: Float64Array, bin: numb
   return merged;
 }
 
-function morphology(plus: SignalBlock[], minus: SignalBlock[], start: number, end: number, flank = 250) {
+export function morphology(plus: SignalBlock[], minus: SignalBlock[], start: number, end: number, flank = 250) {
   const center = Math.floor((start + end) / 2), left = Math.max(start, center - flank), right = Math.min(end, center + flank);
   const ml = integrate(minus, left, center), pl = integrate(plus, left, center), mr = integrate(minus, center, right), pr = integrate(plus, center, right);
+  return classifyGeometry(ml, pl, mr, pr);
+}
+
+export function classifyGeometry(ml: number, pl: number, mr: number, pr: number) {
   const outward = ml + pr, inward = pl + mr, total = outward + inward;
   if (total < 4) return "low_signal_ambiguous";
   if (outward / total >= 0.65) { const balance = Math.min(ml, pr) / Math.max(ml, pr, 1e-12); return balance < 0.15 ? "unidirectional_outward_candidate" : balance >= 0.85 ? "divergent_outward" : "asymmetric_divergent"; }
@@ -54,10 +60,10 @@ function morphology(plus: SignalBlock[], minus: SignalBlock[], start: number, en
   return Math.min(outward, inward) / total >= 0.15 ? "bidirectional_mixed_geometry" : "asymmetric_uncertain";
 }
 
-async function open(file: File) {
+export async function open(file: File, signal?: AbortSignal) {
   if (file.size === 0 || file.size > MAX_FILE_BYTES) throw new Error(`${file.name}: file is empty or exceeds the 1 GB browser input limit.`);
   const bw = new BigWig({ filehandle: new BlobFile(file) });
-  const header = await bw.getHeader();
+  const header = await bw.getHeader({signal});
   if (header.fileType !== "bigwig") throw new Error(`${file.name} is not a BigWig file.`);
   return { bw, header };
 }
@@ -124,6 +130,6 @@ export async function runBigWigAnalysis(request: BigWigRequest, progress: (messa
     return { genes: selectedGenes, enhancers, geneStats, links, validation: { mode: "BigWig-only descriptive", genomeAssembly: request.genomeAssembly,
       region, inputFileBytes: Object.values(files).reduce((sum, file) => sum + file.size, 0) + request.annotationFile.size, indexedBytesEstimated: rangeBytes.reduce((a, b) => a + b, 0),
       featureBlockCounts: { controlPlus: cpBlocks.length, controlMinus: cmBlocks.length, treatmentPlus: tpBlocks.length, treatmentMinus: tmBlocks.length },
-      maxIntervalBases: parameters.maxGenomeBases, normalization: request.normalization, chromosomeDictionaryAgreement: true, pValuesProduced: false,
+      maxIntervalBases: parameters.maxGenomeBases, normalization: request.normalization, chromosomeDictionaryAgreement: true, chromosomeSizes:{[region.chrom]:refInfo.length}, pValuesProduced: false,
       warnings: ["Single contrast descriptive track ratios; no inferential p-values are calculated.", "Signal-derived peaks are candidates, not confirmed enhancers."], elapsedMs: 0 } };
 }

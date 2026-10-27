@@ -2,11 +2,13 @@ import {
   buildLinks, compareChromosomes, importEnrsaEnhancers, importEnrsaGenes, inspectEnrsaOptionalInputs,
   importGeneDifferential, importGenes, importRDeSeqEnhancers, importRFilteredBed, type Parameters, type Gene, type Differential,
 } from "./analysis";
+import { runChunkedBigWigAnalysis, ChunkCache } from "./chunked-bigwig";
 import { runBigWigAnalysis } from "./bigwig";
 import { AnalysisCache } from "./analysis-cache";
 import { readLocalText } from "./read-local-text";
 
-export type AnalysisRequest = { scope?: { chrom: string; start: number; end: number } } & (
+export type FeatureScope = {chrom:string;start:number;end:number}|{chromosomes?:string[];excludedContigs:string[]};
+export type AnalysisRequest = { scope?: FeatureScope } & (
   | { id: string; kind: "enrsa"; files: { gbChange: File; normalizedPpGb: File; enhancerChange: File; ppChange?: File; normalizedEnhancerCounts?: File; designTable?: File; normalizationFactors?: File };
     metadata: { assembly: string; contrast: string; source: "enrsa" | "erna_r"; model: string; coordinateConfirmation?: boolean };
     parameters: Parameters }
@@ -18,12 +20,17 @@ export type AnalysisRequest = { scope?: { chrom: string; start: number; end: num
 
 function scopeFeatures(genes:Gene[],stats:Differential[],enhancers:Differential[],scope:AnalysisRequest["scope"],distance:number){
   if(!scope)return {genes,stats,enhancers};
+  if(!("chrom" in scope)){
+    const allowed=(chrom:string)=>!scope.excludedContigs.includes(chrom)&&(!scope.chromosomes||scope.chromosomes.includes(chrom));
+    const selected=genes.filter(g=>allowed(g.chrom)),ids=new Set(selected.map(g=>g.geneId));
+    return {genes:selected,stats:stats.filter(s=>ids.has(s.featureId)),enhancers:enhancers.filter(e=>allowed(e.chrom))};
+  }
   const selected=genes.filter(g=>g.chrom===scope.chrom&&g.end>scope.start-distance&&g.start<scope.end+distance);
   const ids=new Set(selected.map(g=>g.geneId));
   return {genes:selected,stats:stats.filter(s=>ids.has(s.featureId)),enhancers:enhancers.filter(e=>e.chrom===scope.chrom&&e.end>scope.start&&e.start<scope.end)};
 }
 
-export async function executeAnalysis(req: AnalysisRequest, report: (message: string) => void = () => {}, cache?: AnalysisCache) {
+export async function executeAnalysis(req: AnalysisRequest, report: (message: string) => void = () => {}, cache?: AnalysisCache, signal?: AbortSignal, chunkCache?: ChunkCache) {
   const read = (file: File) => cache ? cache.readText(file) : readLocalText(file);
   const started = performance.now();
     let result;
@@ -80,16 +87,10 @@ export async function executeAnalysis(req: AnalysisRequest, report: (message: st
           "No eRNA-diff p-values are inferred for additional filtered BED features without a matched differential result."], elapsedMs: Math.round(performance.now() - started) } };
     } else {
       report("Querying local indexed BigWig blocks in the worker.");
-      result = await runBigWigAnalysis(req.request, (message) => report(message), cache);
+      result = req.request.genomicScope ? await runChunkedBigWigAnalysis(req.request, report, signal, chunkCache) : await runBigWigAnalysis(req.request, (message) => report(message), cache);
       result.validation.elapsedMs = Math.round(performance.now() - started);
     }
   if (req.scope && req.kind !== "bigwig") {
-    const {chrom,start,end}=req.scope;
-    result.genes=result.genes.filter(g=>g.chrom===chrom && g.end>start-req.parameters.maxDistanceBp && g.start<end+req.parameters.maxDistanceBp);
-    result.enhancers=result.enhancers.filter(e=>e.chrom===chrom && e.end>start && e.start<end);
-    const gs=new Set(result.genes.map(g=>g.geneId)); const es=new Set(result.enhancers.map(e=>e.featureId));
-    result.geneStats=result.geneStats.filter(g=>gs.has(g.featureId));
-    result.links=result.links.filter(r=>gs.has(r.gene_id)&&es.has(r.enhancer_id));
     return {...result,validation:{...result.validation,geneRows:result.genes.length,enhancerRows:result.enhancers.length,pairCount:result.links.length,regionalScope:req.scope}};
   }
   return result;
