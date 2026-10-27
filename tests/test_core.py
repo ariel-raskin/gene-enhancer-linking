@@ -119,17 +119,7 @@ def test_small_bigwig_integration_uses_real_tracks_and_exports_pairs(tmp_path):
                 path = tmp_path / f"{sid}_{strand}.bw"
                 handle = pybigwig.open(str(path), "w")
                 handle.addHeader([("chr1", 1000)])
-                starts = [i for i, value in enumerate(values[strand]) if value != 0]
-                # Merge identical adjacent base values to create compact tracks.
-                entries = []
-                for start in starts:
-                    if entries and entries[-1][1] == start and entries[-1][2] == values[strand][start]:
-                        entries[-1][1] += 1
-                    else:
-                        entries.append([start, start + 1, values[strand][start]])
-                if entries:
-                    handle.addEntries(["chr1"] * len(entries), [entry[0] for entry in entries],
-                                      ends=[entry[1] for entry in entries], values=[entry[2] for entry in entries])
+                handle.addEntries("chr1", 0, values=values[strand], span=1, step=1)
                 handle.close(); tracks[strand] = path.name
             sample_rows.append({"sample_id": sid, "group": group, "time": "1h", "replicate": rep,
                                 "is_control": group == "control", **tracks})
