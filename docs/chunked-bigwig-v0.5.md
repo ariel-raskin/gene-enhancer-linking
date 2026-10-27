@@ -79,7 +79,7 @@ Narrowing the scope, raising a signal floor or reducing distance changes the sci
 
 The existing `scope` interval is retained for interval execution. Older v0.4 manifests lacking `genomicScope` retain their original regional engine and cache behavior. Reselect a genomic scope to opt into chunking. Statistical tables retain all supplied features by default. Optional restriction filters the declared interval or selected chromosome names before pair generation; annotated-genome restriction keeps supplied model features except explicit contig exclusions. A model catalog can differ from the track annotation and remains a separate evidence layer. No statistical values are transferred to newly discovered peaks. Combined layers and shared sample identities retain v0.4 semantics.
 
-A manifest-renamed contrast now excludes an automatically inferred duplicate using the same exact treatment track pair or statistical pair. The duplicate remains visible and can be reviewed; it is not run a second time simply because its inferred name differs.
+A manifest-renamed contrast now excludes an automatically inferred duplicate using the same complete set of core input files, including both control tracks and the annotation. A shared treatment against a different control is a distinct comparison. The duplicate remains visible and can be reviewed; it is not run a second time simply because its inferred name differs.
 
 ## Exports and browser coordinates
 

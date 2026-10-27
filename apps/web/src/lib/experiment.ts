@@ -143,8 +143,10 @@ export function readExperimentMetadata(text: string, files: ImportedFile[]) {
 }
 /** A renamed manifest comparison must not also execute its automatically inferred duplicate. */
 export function duplicateProposals(proposals:Contrast[],declared:Contrast[]) {
-  return proposals.filter(p=>!declared.some(c=>c.id===p.id)&&declared.some(c=>
-    [["treatmentPlus","treatmentMinus"],["gbChange","enhancerChange"],["geneResults","enhancerResults"]].some(roles=>roles.every(role=>p.bindings[role as InputRole]&&p.bindings[role as InputRole]===c.bindings[role as InputRole]))));
+  const coreRoles:InputRole[]=["controlPlus","controlMinus","treatmentPlus","treatmentMinus","annotation","gbChange","normalizedPpGb","enhancerChange","geneResults","enhancerResults"];
+  const complete=(c:Contrast)=>[["controlPlus","controlMinus","treatmentPlus","treatmentMinus","annotation"],["gbChange","normalizedPpGb","enhancerChange"],["geneResults","enhancerResults","annotation"]].some(roles=>roles.every(role=>c.bindings[role as InputRole]));
+  return proposals.filter(p=>!declared.some(c=>c.id===p.id)&&complete(p)&&declared.some(c=>
+    inferredMode(c)===inferredMode(p)&&c.geneFormat===p.geneFormat&&c.geneCoordinates===p.geneCoordinates&&coreRoles.every(role=>p.bindings[role]===c.bindings[role])));
 }
 export function inferredMode(c: Contrast) {
   const has = (...roles: InputRole[]) => roles.every((r) => c.bindings[r]);
