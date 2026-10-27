@@ -1,0 +1,4 @@
+enhancer_id	chrom	start	end	midpoint	baseline_signal	morphology	strand_left_minus	strand_left_plus	strand_right_minus	strand_right_plus	overlaps_promoter	overlapping_gene_bodies	promoter_gene_ids	candidate_source
+chrDemo:1900-2100	chrDemo	1900	2100	2000	800.9999990463257	divergent_outward	392.4899995326996	0.0	0.0	392.4899995326996	False			synthetic_signal_discovery
+chrDemo:3900-4100	chrDemo	3900	4100	4000	700.9999990463257	unidirectional_or_readthrough	0.0	343.4899995326996	0.0	343.4899995326996	False			synthetic_signal_discovery
+chrDemo:6000-7500	chrDemo	6000	7500	6750	13629.99997138977	bidirectional_mixed_geometry	396.9899990558624	396.9899990558624	496.9899990558624	496.9899990558624	True	GENE_CONC	GENE_CONC;GENE_DIST	synthetic_signal_discovery

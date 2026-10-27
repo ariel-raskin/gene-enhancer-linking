@@ -1,0 +1,60 @@
+{
+  "synthetic": true,
+  "genome_assembly": "synthetic-demo-v1",
+  "normalization": "same synthetic per-base track scale across all samples; no statistical normalization",
+  "region": {
+    "chrom": "chrDemo",
+    "start": 0,
+    "end": 10000,
+    "label": "chrDemo:1-10000"
+  },
+  "genes_tsv": "genes.tsv",
+  "output_dir": "results",
+  "parameters": {
+    "peak_bin_bp": 100,
+    "min_peak_signal": 8,
+    "merge_gap_bp": 0,
+    "morphology_flank_bp": 100,
+    "max_distance_bp": 5000,
+    "min_abs_log2fc": 0.5,
+    "pseudocount": 1.0
+  },
+  "samples": [
+    {
+      "sample_id": "ctrl_A",
+      "group": "control",
+      "time": "1h",
+      "replicate": "A",
+      "is_control": true,
+      "plus": "data/ctrl_A_plus.bw",
+      "minus": "data/ctrl_A_minus.bw"
+    },
+    {
+      "sample_id": "ctrl_B",
+      "group": "control",
+      "time": "1h",
+      "replicate": "B",
+      "is_control": true,
+      "plus": "data/ctrl_B_plus.bw",
+      "minus": "data/ctrl_B_minus.bw"
+    },
+    {
+      "sample_id": "treat_A",
+      "group": "perturbation",
+      "time": "1h",
+      "replicate": "A",
+      "is_control": false,
+      "plus": "data/treat_A_plus.bw",
+      "minus": "data/treat_A_minus.bw"
+    },
+    {
+      "sample_id": "treat_B",
+      "group": "perturbation",
+      "time": "1h",
+      "replicate": "B",
+      "is_control": false,
+      "plus": "data/treat_B_plus.bw",
+      "minus": "data/treat_B_minus.bw"
+    }
+  ]
+}

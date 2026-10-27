@@ -1,0 +1,42 @@
+{
+  "genome_assembly": "synthetic-demo-v1",
+  "region_label": "chrDemo:1-10000",
+  "gene_count": 2,
+  "sample_count": 4,
+  "control_samples": [
+    "ctrl_A",
+    "ctrl_B"
+  ],
+  "treatment_samples": [
+    "treat_A",
+    "treat_B"
+  ],
+  "experimental_scope": "synthetic bounded-region demonstration",
+  "normalization": "same synthetic per-base track scale across all samples; no statistical normalization",
+  "parameters": {
+    "peak_bin_bp": 100,
+    "min_peak_signal": 8,
+    "merge_gap_bp": 0,
+    "morphology_flank_bp": 100,
+    "max_distance_bp": 5000,
+    "min_abs_log2fc": 0.5,
+    "pseudocount": 1.0
+  },
+  "enhancer_count": 3,
+  "candidate_pair_count": 6,
+  "genes_with_candidates": 2,
+  "evidence_tier_counts": {
+    "high": 0,
+    "moderate": 2,
+    "weak": 0,
+    "discordant": 1,
+    "insufficient": 3
+  },
+  "coordinate_convention": "0-based half-open",
+  "scientific_note": "Transcriptional response concordance nominates candidates; it does not prove causal enhancer-to-gene regulation.",
+  "interact_validation": {
+    "row_count": 6,
+    "field_count": 18,
+    "valid": true
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "config_file": "experiment.json",
+  "config_sha256": "15a7e8e13e5cf1410c032aea61b7b284d745c37dd742a7562dbd2d79e8b090cf",
+  "sample_tracks": [
+    {
+      "sample_id": "ctrl_A",
+      "plus": {
+        "file": "ctrl_A_plus.bw",
+        "bytes": 5046,
+        "mtime_ns": 1793121096192031015,
+        "sha256": "d5c797c946bccc95a0e1e9b7c24a738975467f06505ba57ac62374e465155a99"
+      },
+      "minus": {
+        "file": "ctrl_A_minus.bw",
+        "bytes": 4753,
+        "mtime_ns": 1793121096197031039,
+        "sha256": "bb299f0cc9e7cff114d54f51470e72a9fbd604bc49b53e70478a16f7f663f640"
+      }
+    },
+    {
+      "sample_id": "ctrl_B",
+      "plus": {
+        "file": "ctrl_B_plus.bw",
+        "bytes": 5039,
+        "mtime_ns": 1793121096203031068,
+        "sha256": "a9fcd505bb8827a6651997e5d082cdd6c08bf27b7b2cd91e5460a7d4f1f28ab0"
+      },
+      "minus": {
+        "file": "ctrl_B_minus.bw",
+        "bytes": 4744,
+        "mtime_ns": 1793121096208031091,
+        "sha256": "5b25ea86cc12194d98c446d79975cb45bdb51a91e047f767454e1c9e43005212"
+      }
+    },
+    {
+      "sample_id": "treat_A",
+      "plus": {
+        "file": "treat_A_plus.bw",
+        "bytes": 5058,
+        "mtime_ns": 1793121096214031120,
+        "sha256": "484d386018171bf392879df423e02decd6e7e6c5b5126c8788c21eee6d426f2f"
+      },
+      "minus": {
+        "file": "treat_A_minus.bw",
+        "bytes": 4756,
+        "mtime_ns": 1793121096219031144,
+        "sha256": "8a2260473f8fe08f7d8051b2b8b691a5d1b7f0879739f644515f754b1794c96e"
+      }
+    },
+    {
+      "sample_id": "treat_B",
+      "plus": {
+        "file": "treat_B_plus.bw",
+        "bytes": 5042,
+        "mtime_ns": 1793121096224031167,
+        "sha256": "fc6b5a0fe611376b80157a5af5c00e9a51f4e5496f23aa09d35ab57a64bb7616"
+      },
+      "minus": {
+        "file": "treat_B_minus.bw",
+        "bytes": 4744,
+        "mtime_ns": 1793121096230031196,
+        "sha256": "713b30f51964d49b5ee5fc97afcf6bde6f387b5cbd62cca113f0fcbe2eb318cb"
+      }
+    }
+  ],
+  "program": "gel-core",
+  "version": "0.1.0"
+}

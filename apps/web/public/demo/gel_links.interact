@@ -1,0 +1,7 @@
+track type=interact name="GEL candidate response evidence" description="Response evidence; not causal validation" visibility=full
+chrDemo	1900	6101	chrDemo:1900-2100__GENE_CONC	700	0.910998	perturbation-response	129,181,109	chrDemo	1900	2100	chrDemo:1900-2100	.	chrDemo	5500	6101	DEMO1	+
+chrDemo	1900	5900	chrDemo:1900-2100__GENE_DIST	100	0.0	perturbation-response	130,140,137	chrDemo	1900	2100	chrDemo:1900-2100	.	chrDemo	5299	5900	DEMO2	-
+chrDemo	3900	6101	chrDemo:3900-4100__GENE_CONC	250	0.910998	perturbation-response	190,76,58	chrDemo	3900	4100	chrDemo:3900-4100	.	chrDemo	5500	6101	DEMO1	+
+chrDemo	3900	5900	chrDemo:3900-4100__GENE_DIST	100	0.0	perturbation-response	130,140,137	chrDemo	3900	4100	chrDemo:3900-4100	.	chrDemo	5299	5900	DEMO2	-
+chrDemo	5500	7500	chrDemo:6000-7500__GENE_CONC	700	0.910998	perturbation-response	129,181,109	chrDemo	6000	7500	chrDemo:6000-7500	.	chrDemo	5500	6101	DEMO1	+
+chrDemo	5299	7500	chrDemo:6000-7500__GENE_DIST	100	0.0	perturbation-response	130,140,137	chrDemo	6000	7500	chrDemo:6000-7500	.	chrDemo	5299	5900	DEMO2	-

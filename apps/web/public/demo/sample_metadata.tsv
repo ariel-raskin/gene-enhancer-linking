@@ -1,0 +1,5 @@
+sample_id	group	time	replicate	plus	minus	is_control
+ctrl_A	control	1h	A	ctrl_A_plus.bw	ctrl_A_minus.bw	True
+ctrl_B	control	1h	B	ctrl_B_plus.bw	ctrl_B_minus.bw	True
+treat_A	perturbation	1h	A	treat_A_plus.bw	treat_A_minus.bw	False
+treat_B	perturbation	1h	B	treat_B_plus.bw	treat_B_minus.bw	False
