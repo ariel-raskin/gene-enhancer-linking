@@ -1,3 +1,4 @@
+import { validateScope, validateExecution, type GenomicScope, type ExecutionLimits } from "./genomic-scope";
 import { type Parameters, type Link, type Gene, type Differential, parseDelimited } from "./analysis";
 import { type ExportInput } from "./exports";
 import { type ImportedFile, type InputRole } from "./smart-importer";
@@ -21,14 +22,14 @@ export type Experiment = {
   schema_version: 2; product: "GEL Web"; experimentId: string; assembly: string; annotationProvenance: string;
   model: string; normalization: string; scope: Scope; regionalStatistics: boolean; samples: Sample[];
   conditions: { id: string; label: string }[]; contrasts: Contrast[];
-  metadataWarnings?: string[];
+  metadataWarnings?: string[]; genomicScope?: GenomicScope; execution?: ExecutionLimits;
   files: { id: string; path: string; role: InputRole; size: number; lastModified: number; recognition: string; evidence: string[]; sha256?: string }[];
 };
 export type ContrastStatus = "pending" | "running" | "successful" | "failed" | "excluded" | "incomplete" | "cancelled";
 export type Outcome = { contrastId: string; status: ContrastStatus; findings: string[]; result?: ExportInput; elapsedMs?: number; resultBytes?: number };
 export type ExperimentLink = Link & { experiment_id: string; contrast_id: string; candidate_id: string; control_condition: string; treatment_condition: string; perturbation: string; time_point: string; genome_assembly: string; control_sample_ids: string; treatment_sample_ids: string; control_track_sample_ids:string; treatment_track_sample_ids:string; evidence_layer: string };
 export const MAX_CONTRASTS = 24;
-export const GEL_VERSION = "0.4.0";
+export const GEL_VERSION = "0.5.0";
 export const MAX_EXPERIMENT_ROWS = 200_000;
 export const MAX_RESULT_BYTES = 128 * 1024 * 1024;
 export const fileKey = (f: ImportedFile) => `${f.path.replaceAll("\\", "/")}:${f.file.size}:${f.file.lastModified}`;
@@ -112,6 +113,8 @@ export function readExperimentMetadata(text: string, files: ImportedFile[]) {
   if (data.schema_version !== 2 || data.product !== "GEL Web" || !Array.isArray(data.contrasts) || data.contrasts.length > MAX_CONTRASTS) throw new Error("Expected a GEL experiment manifest schema_version 2 with up to 24 contrasts.");
   if(data.regionalStatistics!==undefined&&typeof data.regionalStatistics!=="boolean")throw new Error("regionalStatistics must be boolean.");
   for (const key of ["experimentId", "assembly", "annotationProvenance", "model", "normalization"] as const) if (data[key] !== undefined && typeof data[key] !== "string") throw new Error(`Invalid manifest field: ${key}.`);
+  if(data.genomicScope) validateScope(data.genomicScope);
+  if(data.execution) validateExecution(data.execution);
   const paths = new Map((data.files ?? []).map(f=>[f.id,f.path]));
   for(const recorded of data.files??[]){const actual=files.find(f=>f.path===recorded.path);if(actual&&(recorded.size!==actual.file.size||(recorded.sha256&&actual.sha256&&recorded.sha256!==actual.sha256)))throw new Error(`Manifest content fingerprint differs for ${recorded.path}; review the changed file and update the manifest.`);}
   const ids = new Set<string>();
@@ -137,6 +140,11 @@ export function readExperimentMetadata(text: string, files: ImportedFile[]) {
     if(Object.values(sample).some(v=>typeof v!=="string"))throw new Error("Sample metadata fields must be strings.");return sample;
   });
   return data;
+}
+/** A renamed manifest comparison must not also execute its automatically inferred duplicate. */
+export function duplicateProposals(proposals:Contrast[],declared:Contrast[]) {
+  return proposals.filter(p=>!declared.some(c=>c.id===p.id)&&declared.some(c=>
+    [["treatmentPlus","treatmentMinus"],["gbChange","enhancerChange"],["geneResults","enhancerResults"]].some(roles=>roles.every(role=>p.bindings[role as InputRole]&&p.bindings[role as InputRole]===c.bindings[role as InputRole]))));
 }
 export function inferredMode(c: Contrast) {
   const has = (...roles: InputRole[]) => roles.every((r) => c.bindings[r]);
@@ -178,7 +186,8 @@ export function assessContrast(c: Contrast, exp: Experiment) {
   const referenced=new Set([...c.controlSampleIds,...c.treatmentSampleIds,...c.controlTrackSampleIds,...c.treatmentTrackSampleIds]);
   findings.push(...sampleFindings(exp.samples.filter(s=>referenced.has(s.id))));
   if(sampleFindings(exp.samples.filter(s=>!referenced.has(s.id))).length)warnings.push("The registry has conflicting unreferenced sample records; those records are not used in this comparison.");
-  if (exp.regionalStatistics || tracks) if (!exp.scope.chrom || !Number.isInteger(exp.scope.start) || !Number.isInteger(exp.scope.end) || exp.scope.start < 0 || exp.scope.end <= exp.scope.start || exp.scope.end - exp.scope.start > 50_000_000) findings.push("Choose a valid region up to 50 Mb.");
+  if ((exp.regionalStatistics || tracks) && (!exp.genomicScope || exp.genomicScope.mode === "interval")) if (!exp.scope.chrom || !Number.isInteger(exp.scope.start) || !Number.isInteger(exp.scope.end) || exp.scope.start < 0 || exp.scope.end <= exp.scope.start || exp.scope.end - exp.scope.start > 50_000_000) findings.push("Choose a valid region up to 50 Mb.");
+  if(exp.genomicScope){try{validateScope(exp.genomicScope);validateExecution(exp.execution);}catch(e){findings.push(e instanceof Error?e.message:String(e));}}
   return { mode, source, status: c.excluded ? "excluded" as const : findings.length ? "incomplete" as const : "pending" as const, findings, warnings,
     statisticsReady:hasEnrsa||hasR,tracksReady:["controlPlus","controlMinus","treatmentPlus","treatmentMinus","annotation"].every(r=>has(r as InputRole)),
     trackFilesPresent:exp.files.some(f=>(c.fileIds.includes(f.id)||Object.values(c.bindings).includes(f.id))&&/^(control|treatment)(Plus|Minus)$/.test(f.role)),
@@ -188,20 +197,26 @@ export function requestsForContrast(c: Contrast, exp: Experiment, registry: Reco
   const check = assessContrast(c, exp); if (check.status !== "pending") throw new Error(check.findings.join(" ") || "Contrast excluded.");
   const f = (role: InputRole) => registry[c.bindings[role] ?? ""];
   const optional = (role: InputRole) => f(role) || undefined;
-  const common = { id: c.id, parameters, scope: exp.regionalStatistics ? exp.scope : undefined };
+  const common = { id: c.id, parameters, scope: exp.regionalStatistics ? (!exp.genomicScope||exp.genomicScope.mode==="interval"?exp.scope:{chromosomes:exp.genomicScope.mode==="chromosomes"?exp.genomicScope.chromosomes:undefined,excludedContigs:exp.genomicScope.excludedContigs}) : undefined };
   const requests: AnalysisRequest[] = [];
   if (check.statisticalEvidence) {
     if (check.source === "enrsa") requests.push({ ...common, kind: "enrsa", files: { gbChange: f("gbChange"), normalizedPpGb: f("normalizedPpGb"), enhancerChange: f("enhancerChange"), ppChange: optional("ppChange"), designTable: optional("designTable"), normalizationFactors: optional("normalizationFactors"), normalizedEnhancerCounts: optional("normalizedEnhancerCounts") }, metadata: { assembly: exp.assembly, contrast: c.id, source: "enrsa", model: c.model || exp.model } });
     else requests.push({ ...common, kind: "erna-r", files: { enhancerResults: f("enhancerResults"), geneResults: f("geneResults"), geneAnnotation: f("annotation"), filteredBed: optional("filteredBed") }, metadata: { assembly: exp.assembly, contrast: c.id, model: c.model || exp.model, geneFormat: c.geneFormat, geneCoordinates: c.geneCoordinates, enhancerCoordinates: c.enhancerCoordinates as CoordinateRule } });
   }
-  if (check.bigwigEvidence) requests.push({ id: c.id, kind: "bigwig", request: { files: { controlPlus: f("controlPlus"), controlMinus: f("controlMinus"), treatmentPlus: f("treatmentPlus"), treatmentMinus: f("treatmentMinus") }, annotationFile: f("annotation"), annotationFormat: c.geneFormat, annotationCoordinates: c.geneCoordinates, genomeAssembly: exp.assembly, normalization: c.normalization || exp.normalization, contrast: c.id, region: exp.scope, parameters } });
+  if (check.bigwigEvidence) requests.push({ id: c.id, kind: "bigwig", request: { files: { controlPlus: f("controlPlus"), controlMinus: f("controlMinus"), treatmentPlus: f("treatmentPlus"), treatmentMinus: f("treatmentMinus") }, annotationFile: f("annotation"), annotationFormat: c.geneFormat, annotationCoordinates: c.geneCoordinates, genomeAssembly: exp.assembly, normalization: c.normalization || exp.normalization, contrast: c.id, region: exp.scope, genomicScope:exp.genomicScope, execution:exp.execution, parameters } });
   return requests;
 }
+export function experimentLinkRefs(exp: Experiment, outcomes: Outcome[], layer: "primary" | "track" = "primary") {
+  return outcomes.filter(o=>o.status==="successful"&&o.result).flatMap(o=>{
+    const contrast=exp.contrasts.find(c=>c.id===o.contrastId)!;
+    return (layer==="track"?o.result!.trackEvidence?.links??[]:o.result!.links).map(row=>({row,contrast}));
+  }).sort((a,b)=>compare(a.contrast.id,b.contrast.id)||compare(a.row.link_id,b.row.link_id));
+}
+export function decorateExperimentLink(exp:Experiment,r:Link,c:Contrast,layer:"primary"|"track"="primary"):ExperimentLink {
+  return {...r,experiment_id:exp.experimentId,contrast_id:c.id,candidate_id:`${encodeURIComponent(c.id)}::${encodeURIComponent(r.link_id)}`,control_condition:c.control,treatment_condition:c.treatment,perturbation:c.perturbation,time_point:c.timePoint,genome_assembly:exp.assembly,control_sample_ids:c.controlSampleIds.join(";"),treatment_sample_ids:c.treatmentSampleIds.join(";"),control_track_sample_ids:c.controlTrackSampleIds.join(";"),treatment_track_sample_ids:c.treatmentTrackSampleIds.join(";"),evidence_layer:layer};
+}
 export function experimentLinks(exp: Experiment, outcomes: Outcome[], layer: "primary" | "track" = "primary"): ExperimentLink[] {
-  return outcomes.filter((o) => o.status === "successful" && o.result).flatMap((o) => {
-    const c = exp.contrasts.find((c) => c.id === o.contrastId)!; const rows = layer === "track" ? o.result!.trackEvidence?.links ?? [] : o.result!.links;
-    return rows.map((r) => ({ ...r, experiment_id: exp.experimentId, contrast_id: c.id, candidate_id: `${encodeURIComponent(c.id)}::${encodeURIComponent(r.link_id)}`, control_condition: c.control, treatment_condition: c.treatment, perturbation: c.perturbation, time_point: c.timePoint, genome_assembly: exp.assembly, control_sample_ids: c.controlSampleIds.join(";"), treatment_sample_ids: c.treatmentSampleIds.join(";"),control_track_sample_ids:c.controlTrackSampleIds.join(";"),treatment_track_sample_ids:c.treatmentTrackSampleIds.join(";"), evidence_layer: layer }));
-  }).sort((a,b) => compare(a.contrast_id,b.contrast_id) || compare(a.link_id,b.link_id));
+  return experimentLinkRefs(exp,outcomes,layer).map(({row,contrast})=>decorateExperimentLink(exp,row,contrast,layer));
 }
 export function geneSummaries(exp: Experiment, outcomes: Outcome[]) {
   return outcomes.filter((o) => o.status === "successful" && o.result).flatMap((o) => {

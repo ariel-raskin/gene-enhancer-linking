@@ -27,3 +27,5 @@ test-results/
 *.zip
 examples/demo/results/
 !apps/web/public/demo/gel-results.zip
+
+!examples/synthetic_chunks/*.bw

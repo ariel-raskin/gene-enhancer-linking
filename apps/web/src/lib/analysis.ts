@@ -255,7 +255,7 @@ export function promoterOverlap(enhancer: Differential, gene: Gene, params: Para
   return enhancer.start < right && left < enhancer.end;
 }
 
-export function buildLinks(genes: Gene[], geneStats: Differential[], enhancers: Differential[], params: Parameters, metadata: { contrast: string; compatibility: Compatibility; morphologyById?: Map<string, string>; source: "differential" | "bigwig" }) {
+export function buildLinks(genes: Gene[], geneStats: Differential[], enhancers: Differential[], params: Parameters, metadata: { contrast: string; compatibility: Compatibility; morphologyById?: Map<string, string>; source: "differential" | "bigwig"; maxLinks?: number }) {
   const geneStat = new Map(geneStats.map((stat) => [stat.featureId, stat]));
   const links: Link[] = [];
   const byChrom = new Map<string, Differential[]>();
@@ -299,7 +299,7 @@ export function buildLinks(genes: Gene[], geneStats: Differential[], enhancers: 
         morphology: metadata.morphologyById?.get(enhancer.featureId) ?? "catalog_transcribed_region", overlaps_promoter: isPromoter, overlaps_gene_body: isBody,
         evidence_tier: tier, evidence_source: metadata.source === "bigwig" ? "descriptive local BigWig signal" : "matched differential feature estimates", contrast: metadata.contrast,
         compatibility_status: metadata.compatibility.status, classification_reason: reason });
-      if (links.length > 1_000_000) throw new Error("Candidate pair count exceeds the 1,000,000-row browser safety limit. Restrict the distance window or use a local workflow.");
+      if (links.length > (metadata.maxLinks ?? 1_000_000)) throw new Error("Candidate pair count exceeds the configured browser safety limit; this contrast is incomplete. Restrict the distance window or use a local workflow.");
     }
   }
   return links.sort((a, b) => a.gene_symbol.localeCompare(b.gene_symbol) || a.distance_bp - b.distance_bp || a.enhancer_id.localeCompare(b.enhancer_id));
@@ -327,12 +327,19 @@ export function checkCompatibility(input: { bigwigAssembly?: string; statsAssemb
 export function rowsToTsv(rows: Record<string, unknown>[]) { const keys = [...new Set(rows.flatMap((row) => Object.keys(row)))]; return [keys.join("\t"), ...rows.map((row) => keys.map((key) => quote(String(row[key] ?? ""), "\t")).join("\t"))].join("\n"); }
 export function rowsToCsv(rows: Record<string, unknown>[]) { const keys = [...new Set(rows.flatMap((row) => Object.keys(row)))]; return [keys.join(","), ...rows.map((row) => keys.map((key) => quote(String(row[key] ?? ""), ",")).join(","))].join("\n"); }
 const quote = (value: string, delimiter: string) => value.includes(delimiter) || value.includes('"') || value.includes("\n") ? `"${value.replaceAll('"', '""')}"` : value;
-export function linksToBedpe(rows: Link[]) { return rows.map((row) => { const p0 = row.gene_strand === "+" ? row.tss - 500 : row.tss - 100; const p1 = row.gene_strand === "+" ? row.tss + 101 : row.tss + 501; return [row.chrom, row.enhancer_start, row.enhancer_end, row.gene_chrom, Math.max(0, p0), Math.max(Math.max(0, p0) + 1, p1), row.link_id, tierScore(row.evidence_tier), ".", row.gene_strand].join("\t"); }).join("\n"); }
+export function promoterAnchor(row:Link,sizes:Record<string,number>={}) {
+  const start=Math.max(0,row.tss-(row.gene_strand==="+"?500:100));
+  const end=Math.max(start+1,row.tss+(row.gene_strand==="+"?101:501));
+  const length=sizes[row.gene_chrom];
+  if(length!==undefined&&(row.tss<0||row.tss>=length))throw new Error("Gene TSS lies outside the validated chromosome bounds.");
+  return {start,end:length===undefined?end:Math.min(length,end)};
+}
+export function linksToBedpe(rows: Link[],sizes:Record<string,number>={}) { return rows.map((row) => { const p=promoterAnchor(row,sizes); return [row.chrom, row.enhancer_start, row.enhancer_end, row.gene_chrom, p.start, p.end, row.link_id, tierScore(row.evidence_tier), ".", row.gene_strand].join("\t"); }).join("\n"); }
 const tierScore = (tier: string) => ({ high: 1000, moderate: 700, weak: 450, discordant: 250, insufficient: 100 }[tier] ?? 0);
-export function linksToInteract(rows: Link[]) { const colors: Record<string, string> = { high: "31,112,79", moderate: "129,181,109", weak: "221,157,56", discordant: "190,76,58", insufficient: "130,140,137" };
+export function linksToInteract(rows: Link[],sizes:Record<string,number>={}) { const colors: Record<string, string> = { high: "31,112,79", moderate: "129,181,109", weak: "221,157,56", discordant: "190,76,58", insufficient: "130,140,137" };
   return ['track type=interact name="GEL candidate responses" description="Evidence tier is not causal validation" visibility=full', ...rows.map((row) => {
-    const a0 = row.gene_strand === "+" ? row.tss - 500 : row.tss - 100; const a1 = row.gene_strand === "+" ? row.tss + 101 : row.tss + 501; const s = Math.min(row.enhancer_start, Math.max(0, a0)); const e = Math.max(row.enhancer_end, a1);
+    const p=promoterAnchor(row,sizes);const s=Math.min(row.enhancer_start,p.start),e=Math.max(row.enhancer_end,p.end);
     return [row.chrom, s, e, row.link_id, tierScore(row.evidence_tier), row.magnitude_gap_log2fc ?? 0, "response-evidence", colors[row.evidence_tier] ?? colors.insufficient,
-      row.chrom, row.enhancer_start, row.enhancer_end, row.enhancer_id, ".", row.gene_chrom, Math.max(0, a0), Math.max(Math.max(0, a0) + 1, a1), row.gene_symbol, row.gene_strand].join("\t");
+      row.chrom, row.enhancer_start, row.enhancer_end, row.enhancer_id, ".", row.gene_chrom, p.start, p.end, row.gene_symbol, row.gene_strand].join("\t");
   })].join("\n");
 }
