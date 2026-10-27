@@ -11,7 +11,7 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
-bigwig = ["pyBigWig>=0.3.22"]
+bigwig = ["numpy>=1.23", "pyBigWig>=0.3.22"]
 test = ["pytest>=8"]
 
 [project.scripts]
