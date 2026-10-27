@@ -1,5 +1,7 @@
 # GEL Web v0.2 browser analysis and input contract
 
+**Historical version:** v0.4 reuses this single-contrast engine inside a [multi-contrast workflow](multi-contrast-v0.4.md). The scientific definitions and supported table schemas below remain the reference.
+
 ## Scope
 
 This release adds client-side import and analysis for two input paths: (1) four indexed BigWigs for one control-versus-treatment contrast over one explicitly selected interval, and (2) one contrast of eNRSA or eRNA_diff differential tables. Combined mode runs both paths and preserves them as separate evidence layers. It does not upload selected files, run a server-side worker, process BAM/FASTQ, or claim genome-wide BigWig support.

@@ -4,7 +4,7 @@ GEL is an open, training-free research tool for screening enhancer-like nascent 
 
 ## Try the web demo
 
-The web application includes a browser-side analysis workspace with a universal local file importer. Select multiple files or a processed-analysis folder; GEL inspects file signatures and table schemas, proposes roles, preserves relative paths, shows readiness, and lets you correct, add, replace, or remove files. Analysis still runs in local Web Workers, with no user-data upload or cloud processing. Supported analysis paths include eNRSA differential tables, the separate eRNA_diff/R-DESeq2 branch, and a bounded single-region BigWig contrast. Use either synthetic-example button to run small artificial fixtures through the same detector and analysis code.
+The web application includes a browser-side analysis workspace with a universal local file importer. Select multiple files or a processed-analysis folder; GEL inspects file signatures and table schemas, proposes roles, preserves relative paths, shows readiness, and lets you correct, add, replace, or remove files. Analysis still runs in local Web Workers, with no user-data upload or cloud processing. Supported analysis paths include eNRSA differential tables, the separate eRNA_diff/R-DESeq2 branch, and multiple bounded single-region BigWig contrasts. The contrast matrix groups a processed experiment, preserves shared controls, runs ready comparisons independently, and provides a gene explorer and experiment ZIP. Use the synthetic-example buttons to run small artificial fixtures through the same detector and analysis code.
 
 ```powershell
 cd apps/web
@@ -27,7 +27,7 @@ uv run python scripts/publish_demo_fixture.py
 
 The demo generator creates paired plus/minus synthetic BigWigs; the CLI then discovers signal intervals in the configured region, classifies strand geometry, quantifies enhancer and gene-body responses, creates all in-range pairs and writes TSV/CSV/BED/BEDPE/UCSC interact exports plus a ZIP. The final command refreshes the small static web fixture. Or use the already generated demonstration outputs served from `apps/web/public/demo/`.
 
-**Scope limit:** The current Python run is a small declared-region prototype. It is not a genome-wide caller, and the sample-level BigWig fold-change demonstration does not calculate DESeq2 p-values. The browser also accepts audited one-contrast eNRSA and eRNA_diff differential tables; see the browser input contract for exact schemas and provenance requirements.
+**Scope limit:** The current Python run is a small declared-region prototype. It is not a genome-wide caller, and the sample-level BigWig fold-change demonstration does not calculate DESeq2 p-values. The browser also accepts audited eNRSA and eRNA_diff differential tables in independent contrast groups; see the browser input contract for exact schemas and provenance requirements.
 
 ## Project structure
 
@@ -45,11 +45,12 @@ tests/                   Python unit and integration tests
 | Mode | Status |
 |---|---|
 | Four strand-specific BigWigs for one contrast, annotation, explicit normalization, bounded interval | Functional in browser Web Worker; descriptive signal ratios only, no p-values; maximum interval and block budgets enforced |
-| eNRSA gene-body and enhancer differential tables plus exact coordinate table | Functional in browser Web Worker; one contrast per run; model p-values remain feature-level evidence and are never pair p-values |
+| eNRSA gene-body and enhancer differential tables plus exact coordinate table | Functional in browser Web Worker; multiple contrasts run independently; model p-values remain feature-level evidence and are never pair p-values |
 | eRNA_diff R-DESeq2 enhancer table plus supplied gene-body results and annotation | Functional adapter; SAF starts are converted from 1-based inclusive; separate catalog/model from eNRSA |
 | Combined BigWigs and differential tables | Both inputs run, but evidence stays separate and compatibility is currently unverified by default |
-| Universal file detection and folder import | Functional for recognized local signatures/schemas; roles can be corrected and manifest exported; multi-contrast analysis remains one contrast per run |
-| Multiple individual replicate BigWigs, genome-wide BigWig scan, BAM, FASTQ | Not supported by the browser workflow; use the Python prototype/upstream workflow where appropriate |
+| Universal file detection and folder import | Functional for recognized local signatures/schemas; roles can be corrected and manifest exported; multi-contrast experiment review and independent execution are functional |
+| Individual replicate BigWigs | Explicitly select one plus/minus pair per condition and reference one sample per side; descriptive only, no implicit replicate averaging |
+| Genome-wide BigWig scan, BAM, FASTQ | Not supported; v0.5 will address bounded chromosome/genome scanning |
 | Hosted arbitrary uploads/analysis | Disabled; no upload endpoint, public worker, or storage integration |
 
 See [browser analysis and input contract](docs/browser-analysis-v0.2.md) for the accepted headers, coordinate conversions, compatibility rules, resource caps and historical SAF/BED offset audit.
@@ -57,6 +58,8 @@ See [browser analysis and input contract](docs/browser-analysis-v0.2.md) for the
 See [Universal Smart Importer v0.3](docs/smart-importer-v0.3.md) for detectors, role/readiness logic, relative-path behavior, gzip support, manifest schema and remaining input limitations.
 
 See [browser input formats](docs/browser-analysis-v0.2.md), [Python input formats](docs/input-formats.md), [scientific method](docs/scientific-method.md), [architecture](docs/architecture.md), and [deployment](docs/deployment.md). The HEL processed-data audit remains documented in [BigWig provenance](docs/proseq-bigwig-provenance.md) and [eNRSA/DESeq2 compatibility](docs/enrsa-deseq2-compatibility.md).
+
+See [Multi-contrast workflow v0.4](docs/multi-contrast-v0.4.md) and [v0.4 validation](docs/multi-contrast-v0.4-validation.md) for the manifest schema, readiness, shared-control semantics, supported regional scope, exports and measured limits. Select **Load synthetic multi-contrast experiment**, apply its manifest, review and confirm metadata, then **Analyze ready contrasts**.
 
 ## Development
 

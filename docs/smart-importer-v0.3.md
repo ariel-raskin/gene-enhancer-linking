@@ -1,5 +1,7 @@
 # GEL Web v0.3 — Universal Smart Importer
 
+**Historical version:** v0.4 now adds multi-contrast review and independent execution; see [current experiment workflow](multi-contrast-v0.4.md). The format and coordinate rules below remain relevant; its one-contrast restriction describes v0.3.
+
 ## Summary
 
 The workspace now accepts multiple files or a processed-analysis folder in one local file-selection step. A bounded local detector inspects binary signatures and the first text record/header, then presents every file, preserved relative path, proposed role, evidence, and confidence. Researchers can change a role, remove a file, replace one file, add more files incrementally, and save the reviewed assignments as `gel_experiment_manifest.json`.

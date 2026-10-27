@@ -8,12 +8,12 @@ export default defineConfig({
   reporter: "list",
   use: {
     ...devices["Desktop Chrome"],
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: process.env.GEL_BASE_URL ?? "http://127.0.0.1:3000",
     headless: true,
     launchOptions: localChrome ? { executablePath: localChrome } : {},
     acceptDownloads: true,
   },
-  webServer: {
+  webServer: process.env.GEL_BASE_URL ? undefined : {
     command: "npm run dev -- --hostname 127.0.0.1",
     url: "http://127.0.0.1:3000/workspace",
     reuseExistingServer: !process.env.CI,

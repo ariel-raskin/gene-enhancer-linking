@@ -1,4 +1,6 @@
-# GEL Web v0.4 — Whole-experiment screening roadmap
+# GEL Web — Whole-experiment screening roadmap
+
+**Scope update:** v0.4 implements multi-contrast orchestration over the current bounded region engine; see [implementation](multi-contrast-v0.4.md). Chromosome/genome chunking, worker pools and genome-wide validation in this original roadmap are deferred to v0.5.
 
 ## Purpose and scope
 

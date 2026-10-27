@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("synthetic BigWig fixture runs through local worker and exports results", async ({ page }) => {
   const externalRequests: string[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).origin !== "http://127.0.0.1:3000") externalRequests.push(request.url());
+    if (new URL(request.url()).origin !== new URL(process.env.GEL_BASE_URL ?? "http://127.0.0.1:3000").origin) externalRequests.push(request.url());
     expect(request.method()).not.toBe("POST");
   });
 
@@ -27,7 +27,7 @@ test("synthetic BigWig fixture runs through local worker and exports results", a
 test("synthetic eNRSA tables run through the same local worker", async ({ page }) => {
   const externalRequests: string[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).origin !== "http://127.0.0.1:3000") externalRequests.push(request.url());
+    if (new URL(request.url()).origin !== new URL(process.env.GEL_BASE_URL ?? "http://127.0.0.1:3000").origin) externalRequests.push(request.url());
     expect(request.method()).not.toBe("POST");
   });
 
@@ -46,7 +46,7 @@ test("synthetic eNRSA tables run through the same local worker", async ({ page }
 test("universal multi-file selection detects a complete eNRSA workflow locally", async ({ page }) => {
   const externalRequests: string[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).origin !== "http://127.0.0.1:3000") externalRequests.push(request.url());
+    if (new URL(request.url()).origin !== new URL(process.env.GEL_BASE_URL ?? "http://127.0.0.1:3000").origin) externalRequests.push(request.url());
     expect(request.method()).not.toBe("POST");
   });
   await page.goto("/workspace");
@@ -91,7 +91,7 @@ test("researcher can correct a role and replace the individual file", async ({ p
 test("R-DESeq2 branch requires coordinate confirmation and executes locally", async ({ page }) => {
   const externalRequests: string[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).origin !== "http://127.0.0.1:3000") externalRequests.push(request.url());
+    if (new URL(request.url()).origin !== new URL(process.env.GEL_BASE_URL ?? "http://127.0.0.1:3000").origin) externalRequests.push(request.url());
     expect(request.method()).not.toBe("POST");
   });
   await page.goto("/workspace");
@@ -115,7 +115,7 @@ test("R-DESeq2 branch requires coordinate confirmation and executes locally", as
 test("combined mode blocks declared assembly conflicts and keeps evidence layers separate", async ({ page }) => {
   const externalRequests: string[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).origin !== "http://127.0.0.1:3000") externalRequests.push(request.url());
+    if (new URL(request.url()).origin !== new URL(process.env.GEL_BASE_URL ?? "http://127.0.0.1:3000").origin) externalRequests.push(request.url());
     expect(request.method()).not.toBe("POST");
   });
   await page.goto("/workspace");
