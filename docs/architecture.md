@@ -2,7 +2,7 @@
 
 ## Components
 
-- `apps/web`: Next.js App Router, TypeScript, static demo results and gene-centric review UI. Vercel root directory is `apps/web`.
+- `apps/web`: Next.js App Router, TypeScript, browser-local Web Workers, contrast-aware experiment orchestration, indexed regional BigWig queries, audited table adapters, and gene-centric review UI. Vercel root directory is `apps/web`.
 - `packages/gel-core`: Python package with interval utilities, strand geometry, bounded BigWig reading, pair generation and BED/BEDPE/UCSC interact export.
 - `examples/demo`: generated synthetic tracks, reference intervals, config and output fixture; never biological data.
 - `tests`: Python tests for coordinates, morphology, merging, uncertainty absence and pair retention.
@@ -19,4 +19,4 @@ Future BigWig quantification should be separated from peak discovery and from di
 
 ## Hosted compute boundary
 
-Vercel serves the frontend and checked-in synthetic fixture only. It has no HPC credentials or access to lab files and does not accept or store uploads. Future large analysis should use a separately deployed authenticated worker, private object storage with expiring scoped uploads, strict file/region/resource limits, provenance records and explicit cleanup policies. This repository does not yet implement that worker or storage layer.
+Vercel serves frontend assets and public synthetic fixtures. Analysis workers execute in the browser against local File objects. It has no HPC credentials or access to lab files and does not accept or store uploads. The v0.4 experiment worker runs bounded contrasts sequentially and caches by exact File identity. The existing scientific engine is shared by the single and experiment workers. v0.5 will investigate browser-local chromosome chunks and resource scheduling; no hosted worker or storage is part of this milestone. See [multi-contrast architecture and limits](multi-contrast-v0.4.md).
