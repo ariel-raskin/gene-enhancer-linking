@@ -4,7 +4,7 @@ GEL is an open, training-free research tool for screening enhancer-like nascent 
 
 ## Try the web demo
 
-The web application includes a browser-side analysis workspace with a universal local file importer. Select multiple files or a processed-analysis folder; GEL inspects file signatures and table schemas, proposes roles, preserves relative paths, shows readiness, and lets you correct, add, replace, or remove files. Analysis still runs in local Web Workers, with no user-data upload or cloud processing. Supported analysis paths include eNRSA differential tables, the separate eRNA_diff/R-DESeq2 branch, and multiple bounded single-region BigWig contrasts. The contrast matrix groups a processed experiment, preserves shared controls, runs ready comparisons independently, and provides a gene explorer and experiment ZIP. Use the synthetic-example buttons to run small artificial fixtures through the same detector and analysis code.
+The web application includes a browser-side analysis workspace with a universal local file importer. Select multiple files or a processed-analysis folder; GEL inspects file signatures and table schemas, proposes roles, preserves relative paths, shows readiness, and lets you correct, add, replace, or remove files. Analysis still runs in local Web Workers, with no user-data upload or cloud processing. Supported analysis paths include eNRSA differential tables, the separate eRNA_diff/R-DESeq2 branch, and multiple BigWig contrasts over bounded intervals, selected chromosomes or capacity-limited annotated-genome scopes. The contrast matrix groups a processed experiment, preserves shared controls, runs ready comparisons independently, and provides a gene explorer and experiment ZIP. Use the synthetic-example buttons to run small artificial fixtures through the same detector and analysis code.
 
 ```powershell
 cd apps/web
@@ -50,7 +50,8 @@ tests/                   Python unit and integration tests
 | Combined BigWigs and differential tables | Both inputs run, but evidence stays separate and compatibility is currently unverified by default |
 | Universal file detection and folder import | Functional for recognized local signatures/schemas; roles can be corrected and manifest exported; multi-contrast experiment review and independent execution are functional |
 | Individual replicate BigWigs | Explicitly select one plus/minus pair per condition and reference one sample per side; descriptive only, no implicit replicate averaging |
-| Genome-wide BigWig scan, BAM, FASTQ | Not supported; v0.5 will address bounded chromosome/genome scanning |
+| Chromosome / annotated-genome BigWig scope | Functional bounded chunking; validated capacity depends on recorded thresholds and output limits; default-density whole-genome screens may stop explicitly |
+| BAM, FASTQ | Not supported |
 | Hosted arbitrary uploads/analysis | Disabled; no upload endpoint, public worker, or storage integration |
 
 See [browser analysis and input contract](docs/browser-analysis-v0.2.md) for the accepted headers, coordinate conversions, compatibility rules, resource caps and historical SAF/BED offset audit.
@@ -60,6 +61,12 @@ See [Universal Smart Importer v0.3](docs/smart-importer-v0.3.md) for detectors, 
 See [browser input formats](docs/browser-analysis-v0.2.md), [Python input formats](docs/input-formats.md), [scientific method](docs/scientific-method.md), [architecture](docs/architecture.md), and [deployment](docs/deployment.md). The HEL processed-data audit remains documented in [BigWig provenance](docs/proseq-bigwig-provenance.md) and [eNRSA/DESeq2 compatibility](docs/enrsa-deseq2-compatibility.md).
 
 See [Multi-contrast workflow v0.4](docs/multi-contrast-v0.4.md) and [v0.4 validation](docs/multi-contrast-v0.4-validation.md) for the manifest schema, readiness, shared-control semantics, supported regional scope, exports and measured limits. Select **Load synthetic multi-contrast experiment**, apply its manifest, review and confirm metadata, then **Analyze ready contrasts**.
+
+## Chromosome screening (v0.5)
+
+Choose **Organize as experiment**, confirm your track/annotation metadata, set **Genomic scope**, and inspect the contig/resource plan before running. Single/multiple chromosomes and the annotated genome use two bounded passes with complete boundary-crossing peaks. No selected data leave the browser. The gene explorer and complete experiment exports retain each contrast separately.
+
+Read [v0.5 methodology and limits](docs/chunked-bigwig-v0.5.md) and [validation](docs/chunked-bigwig-v0.5-validation.md). A real chromosome and a more restrictive whole-annotation workload completed; default whole-genome outputs exceeded the explicit retention budget. This is not unrestricted genome-wide capacity. Resource estimates exclude native/parser memory. The old Python demo CLI has distinct discovery definitions; the independent Web-contract Python oracle is documented separately.
 
 ## Development
 
