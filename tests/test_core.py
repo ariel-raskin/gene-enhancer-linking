@@ -1,5 +1,6 @@
 import csv
 import json
+from pathlib import Path
 
 import pytest
 
@@ -97,39 +98,7 @@ def test_interact_export_structure_and_anchor_validation(tmp_path):
 
 
 def test_small_bigwig_integration_uses_real_tracks_and_exports_pairs(tmp_path):
-    pybigwig = pytest.importorskip("pyBigWig")
-    genes_path = tmp_path / "genes.tsv"
-    with genes_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["gene_id", "symbol", "chrom", "start", "end", "strand"], delimiter="\t")
-        writer.writeheader(); writer.writerow({"gene_id": "g1", "symbol": "G1", "chrom": "chr1", "start": 700, "end": 900, "strand": "+"})
-    sample_rows = []
-    for group in ("control", "treated"):
-        for rep in ("A", "B"):
-            sid = f"{group}_{rep}"
-            values = {"plus": [], "minus": []}
-            for pos in range(1000):
-                plus = 0.0; minus = 0.0
-                if 200 <= pos < 300: minus = 5
-                if 300 <= pos < 400: plus = 5
-                if 500 <= pos < 600: plus = 4
-                if 700 <= pos < 900: plus = 6 if group == "treated" else 3
-                values["plus"].append(plus); values["minus"].append(minus)
-            tracks = {}
-            for strand in ("plus", "minus"):
-                path = tmp_path / f"{sid}_{strand}.bw"
-                handle = pybigwig.open(str(path), "w")
-                handle.addHeader([("chr1", 1000)])
-                handle.addEntries("chr1", 0, values=values[strand], span=1, step=1)
-                handle.close(); tracks[strand] = path.name
-            sample_rows.append({"sample_id": sid, "group": group, "time": "1h", "replicate": rep,
-                                "is_control": group == "control", **tracks})
-    config = {"genome_assembly": "synthetic-test", "normalization": "same scale",
-              "region": {"chrom": "chr1", "start": 0, "end": 1000}, "genes_tsv": genes_path.name,
-              "parameters": {"peak_bin_bp": 100, "min_peak_signal": 1, "merge_gap_bp": 0,
-                             "morphology_flank_bp": 100, "max_distance_bp": 1000,
-                             "min_abs_log2fc": 0.1}, "samples": sample_rows}
-    config_path = tmp_path / "experiment.json"
-    config_path.write_text(json.dumps(config), encoding="utf-8")
+    config_path = Path(__file__).resolve().parents[1] / "examples" / "demo" / "experiment.json"
     summary = run_config(config_path, tmp_path / "out")
     assert summary["enhancer_count"] >= 2
     assert summary["candidate_pair_count"] >= 2
