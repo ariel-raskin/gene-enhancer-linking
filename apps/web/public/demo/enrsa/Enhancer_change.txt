@@ -1,0 +1,4 @@
+Enhancer_ID	chr	start	end	baseMean	log2FoldChange	lfcSE	stat	pvalue	padj
+Peak_concordant	chrDemo	1900	2100	80	1.14	0.18	6.3	2.1e-10	1.0e-8
+Peak_discordant	chrDemo	3900	4100	70	-1.99	0.22	-9.0	1.0e-18	1.0e-16
+Peak_gene_overlap	chrDemo	6000	7500	500	0.91	0.12	7.6	3.0e-14	1.0e-12

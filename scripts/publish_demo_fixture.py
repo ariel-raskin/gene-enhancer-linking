@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples" / "demo" / "results"
 DEST = ROOT / "apps" / "web" / "public" / "demo"
+DEMO = ROOT / "examples" / "demo"
 
 
 def main() -> None:
@@ -51,6 +52,14 @@ def main() -> None:
         source = SOURCE / name
         if source.is_file():
             shutil.copy2(source, DEST / name)
+    (DEST / "tracks").mkdir(parents=True, exist_ok=True)
+    for track in (DEMO / "data").glob("*.bw"):
+        shutil.copy2(track, DEST / "tracks" / track.name)
+    shutil.copy2(DEMO / "genes.tsv", DEST / "genes.tsv")
+    (DEST / "enrsa").mkdir(parents=True, exist_ok=True)
+    for table in (DEMO / "enrsa").iterdir():
+        if table.is_file():
+            shutil.copy2(table, DEST / "enrsa" / table.name)
     print(f"Published {len(rows)} computed candidate rows to {DEST}")
 
 

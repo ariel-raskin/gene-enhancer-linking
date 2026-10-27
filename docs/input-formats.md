@@ -1,6 +1,6 @@
 # Input formats
 
-The implemented Python entry point currently accepts a small, declared genomic region with explicit sample-level strand-specific BigWigs and a gene table. Processed DESeq2/eNRSA, BAM and FASTQ adapters are extension points, not currently executable modes. Before combining tracks and differential results, follow the [HEL BigWig provenance audit](proseq-bigwig-provenance.md) and [eNRSA/DESeq2 compatibility inventory](enrsa-deseq2-compatibility.md); the normalization methods and feature catalogs are not interchangeable.
+This document describes the Python CLI format. The browser application now separately supports bounded BigWig analysis and one-contrast eNRSA/eRNA_diff processed tables; see the [GEL Web v0.2 input contract](browser-analysis-v0.2.md) for its file roles, schemas, coordinate fixes, resource caps, and compatibility behavior. Neither mode processes BAM or FASTQ. Before combining signal tracks and differential results, follow the [HEL BigWig provenance audit](proseq-bigwig-provenance.md) and [eNRSA/DESeq2 compatibility inventory](enrsa-deseq2-compatibility.md); the normalization methods and feature catalogs are not interchangeable.
 
 ## Experiment JSON
 
