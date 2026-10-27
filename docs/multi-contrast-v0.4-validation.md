@@ -4,7 +4,7 @@ Validation date: 2026-10-27. Scientific baseline: v0.3 merge `9fa6dc18c1eb1fa72b
 
 ## Local verification
 
-- 36 Vitest tests cover the importer, coordinates, original science definitions, full frozen v0.3 records, grouping, source separation, shared samples, model-versus-track sample references, independent execution, cache identity, deterministic ordering/IDs/exports, malformed metadata, missing features, invalid assemblies, cancellation and failure isolation.
+- 37 Vitest tests cover the importer, coordinates, original science definitions, full frozen v0.3 records, grouping, source separation, shared samples, model-versus-track sample references, independent execution, cache identity, deterministic ordering/IDs/exports, malformed metadata, missing features, invalid assemblies, cancellation and failure isolation.
 - 11 Playwright tests cover the existing three input paths plus experiment folder selection, manifest application, readiness/exclusion, cross-contrast gene filtering, actual analysis, experiment ZIP contents, corrupted-source failure, cancellation, responsive layout and a larger processed-data workload.
 - Python: 15 passed and 1 optional real-pyBigWig integration skipped on native Windows. Seven new checks include independent analytical signal parity across two perturbations × three times and registry structure. Linux CI installs the optional BigWig dependency and also exercises the real-track integration.
 - Typecheck, lint and Next.js production build passed locally. No dependency additions were needed for v0.4.
@@ -15,7 +15,7 @@ The frozen JSON was also checked once against temporary, unmodified v0.3 scienti
 
 The committed 51-file fixture has eight proposed comparisons, 18 distinct sample IDs including two shared baseline IDs, six complete treatment/time comparisons, one missing enhancer table and one incompatible assembly. The valid subset produces 18 primary statistical candidate rows and 18 separate track-only rows. Three contrasts include BigWigs; one displays individual replicate tracks while retaining both libraries in its differential-model sample references. No empirical inference is claimed from its illustrative table statistics.
 
-The missing and incompatible contrasts remain incomplete unless explicitly excluded. A separate browser test corrupts a normalized gene strand: exactly one contrast fails and the other five valid contrasts complete. Cancellation terminates the experiment worker and labels unfinished comparisons without converting them to successes. A unit test aborts after the first success and confirms that the remaining work is not executed.
+The missing and incompatible contrasts remain incomplete unless explicitly excluded. A separate browser test corrupts a normalized gene strand: exactly one contrast fails and the other five valid contrasts complete. Cancellation terminates the experiment worker and labels unfinished comparisons without converting them to successes. A unit test aborts after the first success and confirms that the remaining ready work is not executed; excluded/incomplete states are preserved. Duplicate candidate IDs within a single evidence layer fail that contrast explicitly.
 
 ## Regional resource observations
 

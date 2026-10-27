@@ -13,8 +13,8 @@ export async function runExperiment(exp: Experiment, files: Record<string, File>
   const outcomes: Outcome[] = []; let rows = 0, bytes = 0;
   for (const c of exp.contrasts) {
     const assessment = assessContrast(c, exp); const initial = { contrastId: c.id, status: assessment.status, findings: assessment.findings };
-    if (signal?.aborted) { const o: Outcome = { ...initial, status: "cancelled", findings: ["Experiment cancelled; not executed."] }; outcomes.push(o); emit({ type:"state", outcome:o, completed:outcomes.length, total:exp.contrasts.length }); continue; }
     if (assessment.status !== "pending") { outcomes.push(initial); emit({type:"state",outcome:initial,completed:outcomes.length,total:exp.contrasts.length}); continue; }
+    if (signal?.aborted) { const o: Outcome = { ...initial, status: "cancelled", findings: ["Experiment cancelled; not executed."] }; outcomes.push(o); emit({ type:"state", outcome:o, completed:outcomes.length, total:exp.contrasts.length }); continue; }
     emit({ type:"state", outcome:{...initial,status:"running"},completed:outcomes.length,total:exp.contrasts.length });
     const started = performance.now(); let outcome: Outcome;
     try {
@@ -23,6 +23,7 @@ export async function runExperiment(exp: Experiment, files: Record<string, File>
         if (signal?.aborted) throw new Error("Cancelled before next evidence layer.");
         results.push(await perform(req,(message)=>emit({type:"progress",contrastId:c.id,message})));
       }
+      for(const layer of results){const ids=new Set<string>();for(const row of layer.links){if(ids.has(row.link_id))throw new Error(`Duplicate candidate identifier within one evidence layer: ${row.link_id}. Review duplicated source feature annotations.`);ids.add(row.link_id);}}
       const result = results[0];
       if(assessment.statisticalEvidence){
         const optional=result.validation.optionalInputProvenance as {measurementSamples?:string[];geneBodySampleColumns?:string[];designSamples?:string[]}|undefined;

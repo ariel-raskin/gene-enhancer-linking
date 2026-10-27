@@ -84,7 +84,7 @@ describe("contrast-aware experiment model and execution",()=>{
  it("stops scheduling after cancellation without changing already completed results",async()=>{
    const {exp,registry}=await fixture();const controller=new AbortController();
    const run=await runExperiment(exp,registry,parameters,e=>{if(e.type==="state"&&e.outcome.status==="successful")controller.abort();},undefined,controller.signal);
-   expect(run.outcomes[0].status).toBe("successful");expect(run.outcomes.slice(1).every(o=>o.status==="cancelled")).toBe(true);
+   expect(run.outcomes[0].status).toBe("successful");expect(run.outcomes.filter(o=>o.status==="cancelled")).toHaveLength(5);expect(run.outcomes.filter(o=>o.status==="incomplete")).toHaveLength(2);
  });
  it("rejects unsupported resource scopes, invalid thresholds, malformed manifests and too many contrasts",async()=>{
    const {exp,registry,imported}=await fixture();exp.scope.end=50_000_001;expect(assessContrast(exp.contrasts[0],exp).findings.join(" ")).toContain("up to 50 Mb");
@@ -118,6 +118,10 @@ describe("contrast-aware experiment model and execution",()=>{
  it("limits conflicting sample metadata to comparisons that reference that sample",async()=>{
    const {exp}=await fixture();const s=exp.samples.find(s=>s.id==="DrugB_4h_A")!;exp.samples.push({...s,condition:"another condition"});
    expect(assessContrast(exp.contrasts[0],exp).status).toBe("pending");expect(assessContrast(exp.contrasts.find(c=>c.id.includes("DrugB_4h"))!,exp).status).toBe("incomplete");
+ });
+ it("rejects duplicate candidates within one source layer without confusing identical links across contrasts",async()=>{
+   const {exp,registry}=await fixture();const run=await runExperiment({...exp,contrasts:exp.contrasts.slice(0,1)},registry,parameters,()=>{},async(req,report)=>{const result=await executeAnalysis(req,report);return {...result,links:[...result.links,result.links[0]]};});
+   expect(run.outcomes[0].status).toBe("failed");expect(run.outcomes[0].findings.join(" ")).toContain("Duplicate candidate identifier");
  });
 });
 
