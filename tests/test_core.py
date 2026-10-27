@@ -98,6 +98,7 @@ def test_interact_export_structure_and_anchor_validation(tmp_path):
 
 
 def test_small_bigwig_integration_uses_real_tracks_and_exports_pairs(tmp_path):
+    pytest.importorskip("pyBigWig")
     config_path = Path(__file__).resolve().parents[1] / "examples" / "demo" / "experiment.json"
     summary = run_config(config_path, tmp_path / "out")
     assert summary["enhancer_count"] >= 2
