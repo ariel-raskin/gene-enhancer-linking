@@ -4,7 +4,7 @@ GEL is an open, training-free research tool for screening enhancer-like nascent 
 
 ## Try the web demo
 
-The web application includes a browser-side analysis workspace. It reads researcher-selected files locally in Web Workers and does not upload user data or run user analysis in the cloud. It supports an eNRSA differential-table contrast, the separate eRNA_diff/R-DESeq2 enhancer-results branch with supplied gene effects, and a bounded single-region BigWig contrast. Use either synthetic-example button to load small artificial fixtures through the same browser analysis code.
+The web application includes a browser-side analysis workspace with a universal local file importer. Select multiple files or a processed-analysis folder; GEL inspects file signatures and table schemas, proposes roles, preserves relative paths, shows readiness, and lets you correct, add, replace, or remove files. Analysis still runs in local Web Workers, with no user-data upload or cloud processing. Supported analysis paths include eNRSA differential tables, the separate eRNA_diff/R-DESeq2 branch, and a bounded single-region BigWig contrast. Use either synthetic-example button to run small artificial fixtures through the same detector and analysis code.
 
 ```powershell
 cd apps/web
@@ -12,7 +12,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`, choose **Open analysis workspace**, and select **Load synthetic BigWig example** or **Load synthetic eNRSA-table example**. Each fixture is artificial and runs through the real local importer/analysis worker; it is not biological data or hg38. The precomputed **Explore synthetic demo** page remains available as a separate Python-generated reference output.
+Open `http://localhost:3000`, choose **Open analysis workspace**, then select the synthetic example or add your own files/folder. Each demo fixture is artificial and runs through the real local detector and analysis worker; it is not biological data or hg38. Save `gel_experiment_manifest.json` after reviewing assignments to record the selected inputs and declarations. The precomputed **Explore synthetic demo** page remains available as a separate Python-generated reference output.
 
 ## Run the Python demonstration
 
@@ -48,10 +48,13 @@ tests/                   Python unit and integration tests
 | eNRSA gene-body and enhancer differential tables plus exact coordinate table | Functional in browser Web Worker; one contrast per run; model p-values remain feature-level evidence and are never pair p-values |
 | eRNA_diff R-DESeq2 enhancer table plus supplied gene-body results and annotation | Functional adapter; SAF starts are converted from 1-based inclusive; separate catalog/model from eNRSA |
 | Combined BigWigs and differential tables | Both inputs run, but evidence stays separate and compatibility is currently unverified by default |
+| Universal file detection and folder import | Functional for recognized local signatures/schemas; roles can be corrected and manifest exported; multi-contrast analysis remains one contrast per run |
 | Multiple individual replicate BigWigs, genome-wide BigWig scan, BAM, FASTQ | Not supported by the browser workflow; use the Python prototype/upstream workflow where appropriate |
 | Hosted arbitrary uploads/analysis | Disabled; no upload endpoint, public worker, or storage integration |
 
 See [browser analysis and input contract](docs/browser-analysis-v0.2.md) for the accepted headers, coordinate conversions, compatibility rules, resource caps and historical SAF/BED offset audit.
+
+See [Universal Smart Importer v0.3](docs/smart-importer-v0.3.md) for detectors, role/readiness logic, relative-path behavior, gzip support, manifest schema and remaining input limitations.
 
 See [browser input formats](docs/browser-analysis-v0.2.md), [Python input formats](docs/input-formats.md), [scientific method](docs/scientific-method.md), [architecture](docs/architecture.md), and [deployment](docs/deployment.md). The HEL processed-data audit remains documented in [BigWig provenance](docs/proseq-bigwig-provenance.md) and [eNRSA/DESeq2 compatibility](docs/enrsa-deseq2-compatibility.md).
 

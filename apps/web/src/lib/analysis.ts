@@ -160,16 +160,16 @@ export function inspectEnrsaOptionalInputs(input: { geneMeasurements: string; en
   return result;
 }
 
-export function importRDeSeqEnhancers(text: string) {
+export function importRDeSeqEnhancers(text: string, coordinateConvention: "zero_based_half_open" | "one_based_inclusive" = "one_based_inclusive") {
   const rows = parseDelimited(text, ",");
   if (!rows.length) throw new Error("R-DESeq2 enhancer results contain no data rows.");
   return rows.map((row) => {
     const chrom = need(first(row, "Chr"), "Chr"); const rawStart = Number(need(first(row, "Start"), "Start")); const rawEnd = Number(need(first(row, "End"), "End"));
-    const { start, end } = toZeroBasedHalfOpen(rawStart, rawEnd, "one_based_inclusive");
+    const { start, end } = toZeroBasedHalfOpen(rawStart, rawEnd, coordinateConvention);
     const id = need(first(row, "Region_ID", "Geneid"), "Region_ID");
     return { featureId: `${chrom}:${start}-${end}:${id}`, chrom, start, end, log2fc: num(first(row, "log2FoldChange")),
       se: num(first(row, "lfcSE")), pvalue: num(first(row, "pvalue")), padj: num(first(row, "padj")), baseMean: num(first(row, "baseMean")),
-      source: "eRNA_diff R-DESeq2", sourceId: id, sourceCoordinates: `SAF 1-based inclusive ${rawStart}-${rawEnd}; converted to BED ${start}-${end}` } satisfies Differential;
+      source: "eRNA_diff R-DESeq2", sourceId: id, sourceCoordinates: `${coordinateConvention} ${rawStart}-${rawEnd}; represented as BED ${start}-${end}` } satisfies Differential;
   });
 }
 
@@ -200,21 +200,32 @@ export function importGeneDifferential(text: string, genes: Gene[], source = "ge
   return { stats, unmatchedRows: missing };
 }
 
-export function importGenes(text: string, format: "tsv" | "gtf" | "bed", coordinateConvention: "zero_based_half_open" | "one_based_inclusive" = "zero_based_half_open"): Gene[] {
-  if (format === "gtf") {
+export function importGenes(text: string, format: "tsv" | "gtf" | "gff" | "bed" | "saf", coordinateConvention: "zero_based_half_open" | "one_based_inclusive" = "zero_based_half_open"): Gene[] {
+  if (format === "gtf" || format === "gff") {
     const genes: Gene[] = [];
     for (const line of text.split(/\r?\n/)) {
       if (!line || line.startsWith("#")) continue; const f = line.split("\t"); if (f.length < 9 || f[2] !== "gene") continue;
-      const attrs = Object.fromEntries(Array.from(f[8].matchAll(/([\w.]+)\s+"([^"]*)"/g), (m) => [m[1], m[2]]));
-      const id = attrs.gene_id ?? attrs.gene_name; if (!id) continue;
+      const attrs = format === "gtf"
+        ? Object.fromEntries(Array.from(f[8].matchAll(/([\w.]+)\s+"([^"]*)"/g), (m) => [m[1], m[2]]))
+        : Object.fromEntries(f[8].split(";").map((entry) => entry.split("=")).filter((parts) => parts.length >= 2).map(([key, ...value]) => [key, decodeURIComponent(value.join("="))]));
+      const id = attrs.gene_id ?? attrs.gene_name ?? attrs.ID?.replace(/^gene:/, ""); if (!id) continue;
       const startRaw = Number(f[3]), endRaw = Number(f[4]); const interval = toZeroBasedHalfOpen(startRaw, endRaw, "one_based_inclusive");
-      genes.push({ geneId: id, symbol: attrs.gene_name ?? id, chrom: f[0], start: interval.start, end: interval.end, strand: f[6] as "+" | "-", sourceStart: startRaw, sourceEnd: endRaw });
+      genes.push({ geneId: id, symbol: attrs.gene_name ?? attrs.Name ?? id, chrom: f[0], start: interval.start, end: interval.end, strand: f[6] as "+" | "-", sourceStart: startRaw, sourceEnd: endRaw });
     }
     return assertUniqueGenes(genes);
   }
   if (format === "bed") return assertUniqueGenes(text.split(/\r?\n/).filter((line) => line && !line.startsWith("#")).map((line) => {
     const f = line.split("\t"); const start = Number(f[1]), end = Number(f[2]); return { geneId: f[3] || `${f[0]}:${start}-${end}`, symbol: f[3] || "", chrom: f[0], start, end, strand: (f[5] || "+") as "+" | "-" };
   }));
+  if (format === "saf") {
+    const rows = parseDelimited(text); if (!rows.length) throw new Error("SAF annotation contains no rows.");
+    return assertUniqueGenes(rows.map((row) => {
+      const rawStart = Number(need(first(row, "Start"), "SAF Start")); const rawEnd = Number(need(first(row, "End"), "SAF End"));
+      const { start, end } = toZeroBasedHalfOpen(rawStart, rawEnd, "one_based_inclusive"); const strand = first(row, "Strand");
+      if (strand !== "+" && strand !== "-") throw new Error(`SAF Strand must be + or - for ${row.GeneID}`);
+      return { geneId: need(first(row, "GeneID"), "SAF GeneID"), symbol: first(row, "GeneID"), chrom: need(first(row, "Chr"), "SAF Chr"), start, end, strand, sourceStart: rawStart, sourceEnd: rawEnd };
+    }));
+  }
   const rows = parseDelimited(text); if (!rows.length) throw new Error("Gene annotation TSV contains no rows.");
   return assertUniqueGenes(rows.map((row) => {
     const rawStart = Number(need(first(row, "start", "Start"), "gene start")); const rawEnd = Number(need(first(row, "end", "End"), "gene end"));

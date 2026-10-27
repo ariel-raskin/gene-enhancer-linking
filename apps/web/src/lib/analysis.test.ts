@@ -21,6 +21,8 @@ describe("coordinate conversions", () => {
     expect(r[0]).toMatchObject({ start: 100, end: 200, sourceId: "Peak_1", source: "eRNA_diff R-DESeq2" });
     const bed = importRFilteredBed("chr1\t101\t200\tPeak_1\t4");
     expect(bed[0]).toMatchObject({ start: 100, end: 200, log2fc: null });
+    const preserved = importRDeSeqEnhancers("Chr,Start,End,Region_ID,baseMean,log2FoldChange,lfcSE,stat,pvalue,padj\nchr1,101,200,Peak_1,10,1.4,0.2,7,0.001,0.01", "zero_based_half_open");
+    expect(preserved[0]).toMatchObject({ start: 101, end: 200 });
   });
 
   it("parses eNRSA real header semantics and joins by Transcript plus Gene", () => {
@@ -56,6 +58,8 @@ describe("candidate pairs and tiers", () => {
   it("validates GTF and BED gene intervals", () => {
     expect(importGenes('chr2\ts\tgene\t1\t1\t.\t+\t.\tgene_id "G"; gene_name "SYM";', "gtf")[0]).toMatchObject({ start: 0, end: 1, geneId: "G", symbol: "SYM" });
     expect(importGenes("chr2\t10\t20\tG\t0\t-", "bed")[0]).toMatchObject({ start: 10, end: 20, strand: "-" });
+    expect(importGenes("GeneID\tChr\tStart\tEnd\tStrand\nG1\tchr2\t1\t1\t-", "saf")[0]).toMatchObject({ start: 0, end: 1, geneId: "G1", strand: "-" });
+    expect(importGenes("chr2\ts\tgene\t1\t3\t.\t-\t.\tID=gene:GFF1;Name=SYM", "gff")[0]).toMatchObject({ start: 0, end: 3, geneId: "GFF1", symbol: "SYM" });
     expect(() => importGenes("gene_id\tsymbol\tchrom\tstart\tend\tstrand\nG\tA\tchr1\t1\t2\t+\nG\tB\tchr1\t3\t4\t+", "tsv")).toThrow("Duplicate gene identifier");
   });
 
