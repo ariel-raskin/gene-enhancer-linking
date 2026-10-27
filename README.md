@@ -51,7 +51,7 @@ tests/                   Python unit and integration tests
 | FASTQ | Planned wrapper around an established upstream pipeline; not implemented |
 | Hosted arbitrary uploads/analysis | Disabled; no public compute endpoint or storage integration |
 
-See [input formats](docs/input-formats.md), [scientific method](docs/scientific-method.md), [architecture](docs/architecture.md), and [deployment](docs/deployment.md).
+See [input formats](docs/input-formats.md), [scientific method](docs/scientific-method.md), [architecture](docs/architecture.md), and [deployment](docs/deployment.md). The HEL processed-data compatibility audit is documented in [BigWig provenance](docs/proseq-bigwig-provenance.md) and [eNRSA/DESeq2 compatibility](docs/enrsa-deseq2-compatibility.md). Those files specify proposed import rules; they do not imply that the public processed-data adapter is implemented.
 
 ## Development
 

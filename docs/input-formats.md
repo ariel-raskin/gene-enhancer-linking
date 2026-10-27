@@ -1,6 +1,6 @@
 # Input formats
 
-The implemented Python entry point currently accepts a small, declared genomic region with explicit sample-level strand-specific BigWigs and a gene table. Processed DESeq2/eNRSA, BAM and FASTQ adapters are extension points, not currently executable modes.
+The implemented Python entry point currently accepts a small, declared genomic region with explicit sample-level strand-specific BigWigs and a gene table. Processed DESeq2/eNRSA, BAM and FASTQ adapters are extension points, not currently executable modes. Before combining tracks and differential results, follow the [HEL BigWig provenance audit](proseq-bigwig-provenance.md) and [eNRSA/DESeq2 compatibility inventory](enrsa-deseq2-compatibility.md); the normalization methods and feature catalogs are not interchangeable.
 
 ## Experiment JSON
 
