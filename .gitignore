@@ -7,6 +7,8 @@ __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+test-results/
+*.egg-info/
 .ruff_cache/
 .vercel/
 .env*
@@ -16,6 +18,8 @@ __pycache__/
 *.bigWig
 !examples/demo/data/*.bw
 !examples/demo/data/*.bigWig
+!apps/web/public/demo/tracks/*.bw
+!apps/web/public/demo/tracks/*.bigWig
 *.sqlite
 *.db
 *.zip

@@ -1,0 +1,2 @@
+Transcript	Gene	chr	start	end	strand	ppc_ctrl_A	ppc_ctrl_B	gbc_ctrl_A	gbc_ctrl_B	gbc_treat_A	gbc_treat_B
+TX_DEMO1	GENE_CONC	chrDemo	6001	7500	+	15	16	200	210	380	390
