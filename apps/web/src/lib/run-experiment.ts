@@ -1,0 +1,46 @@
+import { type Parameters } from "./analysis";
+import { type ExportInput } from "./exports";
+import { executeAnalysis, type AnalysisRequest } from "./execute-analysis";
+import { AnalysisCache } from "./analysis-cache";
+import { assessContrast, requestsForContrast, MAX_CONTRASTS, MAX_EXPERIMENT_ROWS, MAX_RESULT_BYTES, type Experiment, type Outcome } from "./experiment";
+
+export type ExperimentEvent = { type: "state"; outcome: Outcome; completed: number; total: number } | { type: "progress"; contrastId: string; message: string };
+export async function runExperiment(exp: Experiment, files: Record<string, File>, parameters: Parameters,
+  emit: (event: ExperimentEvent) => void, execute?: (request: AnalysisRequest, report: (message: string) => void) => Promise<ExportInput>, signal?: AbortSignal) {
+  if (exp.contrasts.length > MAX_CONTRASTS) throw new Error(`At most ${MAX_CONTRASTS} contrasts per experiment.`);
+  if (Object.values(parameters).some(v=>typeof v==="number"&&(!Number.isFinite(v)||v<0)) || parameters.maxPadj>1 || parameters.peakBinBp<1 || parameters.maxDistanceBp<1 || parameters.pseudocount<=0) throw new Error("Analysis thresholds must be finite and valid; distance, bin size and pseudocount must be positive, and adjusted p-value must be between 0 and 1.");
+  const cache = new AnalysisCache(); const perform = execute ?? ((req, report) => executeAnalysis(req, report, cache));
+  const outcomes: Outcome[] = []; let rows = 0, bytes = 0;
+  for (const c of exp.contrasts) {
+    const assessment = assessContrast(c, exp); const initial = { contrastId: c.id, status: assessment.status, findings: assessment.findings };
+    if (signal?.aborted) { const o: Outcome = { ...initial, status: "cancelled", findings: ["Experiment cancelled; not executed."] }; outcomes.push(o); emit({ type:"state", outcome:o, completed:outcomes.length, total:exp.contrasts.length }); continue; }
+    if (assessment.status !== "pending") { outcomes.push(initial); emit({type:"state",outcome:initial,completed:outcomes.length,total:exp.contrasts.length}); continue; }
+    emit({ type:"state", outcome:{...initial,status:"running"},completed:outcomes.length,total:exp.contrasts.length });
+    const started = performance.now(); let outcome: Outcome;
+    try {
+      const requests = requestsForContrast(c,exp,files,parameters); const results: ExportInput[] = [];
+      for (const req of requests) {
+        if (signal?.aborted) throw new Error("Cancelled before next evidence layer.");
+        results.push(await perform(req,(message)=>emit({type:"progress",contrastId:c.id,message})));
+      }
+      const result = results[0];
+      if(assessment.statisticalEvidence){
+        const optional=result.validation.optionalInputProvenance as {measurementSamples?:string[];geneBodySampleColumns?:string[];designSamples?:string[]}|undefined;
+        const declared=[...new Set([...c.controlSampleIds,...c.treatmentSampleIds])];
+        const measured=optional?.geneBodySampleColumns?.length?[...new Set(optional.geneBodySampleColumns.map(s=>s.replace(/^gb[cd]_/,"")))]:optional?.measurementSamples;
+        if(declared.length&&measured?.length){const missing=declared.filter(id=>!measured.includes(id));if(missing.length)throw new Error(`Declared statistical sample IDs are absent from normalized gene-body measurements: ${missing.join(", ")}.`);}
+        if(declared.length&&optional?.designSamples?.length&&(declared.length!==new Set(optional.designSamples).size||declared.some(id=>!optional.designSamples!.includes(id))))throw new Error("Declared statistical sample IDs conflict with the supplied contrast-specific design table.");
+        result.validation.statisticalSampleProvenance={declaredSampleIds:declared,measurementSamples:measured??null,designSamples:optional?.designSamples??null,status:declared.length&&measured?.length?"gene-body sample ID consistency checked; model identity remains unverified":"source sample identities unverified"};
+      }
+      result.validation={...result.validation,experimentProvenanceWarnings:assessment.warnings};
+      if (results.length > 1) { result.trackEvidence = results[1]; result.validation = { ...result.validation, compatibility:{status:"Compatibility unverified",checks:[{name:"Separate evidence",status:"unverified",detail:"Track and model effects retained separately. No statistics propagated by overlap."}]}, warnings:[...(result.validation.warnings as string[] ?? []),"Combined sources remain separate; matching user declarations do not independently verify compatibility."] }; }
+      const addedRows = result.links.length + (result.trackEvidence?.links.length ?? 0);
+      const addedBytes = JSON.stringify(result).length * 2;
+      if (rows + addedRows > MAX_EXPERIMENT_ROWS || bytes + addedBytes > MAX_RESULT_BYTES) throw new Error("Experiment retained-output budget exceeded (200,000 links or 128 MiB serialized-size estimate). Narrow the region or select fewer contrasts. Earlier successes are retained.");
+      rows += addedRows; bytes += addedBytes;
+      outcome={contrastId:c.id,status:"successful",findings:assessment.warnings,result,elapsedMs:Math.round(performance.now()-started),resultBytes:addedBytes};
+    } catch (error) { outcome={contrastId:c.id,status:signal?.aborted?"cancelled":"failed",findings:[error instanceof Error?error.message:String(error)],elapsedMs:Math.round(performance.now()-started)}; }
+    outcomes.push(outcome); emit({type:"state",outcome,completed:outcomes.length,total:exp.contrasts.length});
+  }
+  return { outcomes, resources:{retainedRows:rows,retainedResultBytesEstimate:bytes,cacheTextBytes:cache.textBytes,cacheSignalBytesEstimate:cache.blockBytes,cacheHits:cache.hits,concurrentAnalyses:1} };
+}

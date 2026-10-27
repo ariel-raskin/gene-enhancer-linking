@@ -5,15 +5,16 @@ import { readLocalText } from "./read-local-text";
 export type InputRole =
   | "controlPlus" | "controlMinus" | "treatmentPlus" | "treatmentMinus" | "annotation"
   | "gbChange" | "normalizedPpGb" | "enhancerChange" | "ppChange" | "normalizedEnhancerCounts"
-  | "designTable" | "normalizationFactors" | "enhancerResults" | "geneResults" | "filteredBed" | "unknown";
+  | "experimentMetadata" | "designTable" | "normalizationFactors" | "enhancerResults" | "geneResults" | "filteredBed" | "unknown";
 export type Recognition = "structurally_verified" | "inferred" | "user_confirmed" | "unassigned";
 export type DetectorContext = { file: File; relativePath: string; header: string };
 export type DetectorMatch = { role: InputRole; format: string; evidence: string; confidence: number; inferred: boolean };
 export type DetectorPlugin = { id: string; detect(context: DetectorContext): DetectorMatch | null };
-export type ImportedFile = { id: string; file: File; path: string; role: InputRole; format: string; evidence: string[]; confidence: number; recognition: Recognition; suggestedRole: InputRole; duplicateOf?: string };
+export type ImportedFile = { id: string; file: File; path: string; role: InputRole; format: string; evidence: string[]; confidence: number; recognition: Recognition; suggestedRole: InputRole; duplicateOf?: string; sha256?: string };
 export type SampleMetadataPreview = { sampleCount: number; sampleIds: string[]; conditionLevels: string[]; timePoints: string[]; replicateLabels: string[]; batchLabels: string[]; missingSampleIds: number; columns: string[] };
 
 const roles: { role: InputRole; label: string }[] = [
+  { role: "experimentMetadata", label: "GEL experiment manifest (metadata only)" },
   { role: "controlPlus", label: "Control plus-strand BigWig" }, { role: "controlMinus", label: "Control minus-strand BigWig" },
   { role: "treatmentPlus", label: "Treatment plus-strand BigWig" }, { role: "treatmentMinus", label: "Treatment minus-strand BigWig" },
   { role: "annotation", label: "Gene annotation (GTF/GFF/BED/TSV)" }, { role: "gbChange", label: "eNRSA gene-body differential results" },
@@ -36,6 +37,7 @@ const has = (all: string[], ...sets: string[][]) => sets.every((set) => set.some
 
 /** Plugins are ordered; the first structural match defines the schema. Filenames only refine strand/contrast roles. */
 export const detectorPlugins: DetectorPlugin[] = [
+  { id: "experiment-manifest", detect: ({ header }) => /"schema_version"\s*:\s*2/.test(header) && /"contrasts"\s*:/.test(header) && /"product"\s*:\s*"GEL Web"/.test(header) ? {role:"experimentMetadata",format:"GEL experiment manifest v2",evidence:"Versioned GEL experiment metadata; declarations require researcher review",confidence:0.99,inferred:false} : null },
   { id: "bigwig-signature", detect: ({ header }) => header.startsWith("__BIGWIG__") ? { role: "unknown", format: "BigWig", evidence: "Binary BigWig magic signature", confidence: 0.99, inferred: false } : null },
   { id: "bigbed-signature", detect: ({ header }) => header.startsWith("__BIGBED__") ? { role: "unknown", format: "BigBed (not yet processed)", evidence: "Binary BigBed magic signature; GEL does not read BigBed annotations yet", confidence: 0.99, inferred: false } : null },
   { id: "gtf-gff-schema", detect: ({ header }) => { const f = header.split("\t"); if (!(f.length >= 9 && /^\w+$/.test(f[1] ?? "") && /^\d+$/.test(f[3] ?? "") && /^\d+$/.test(f[4] ?? "") && ["gene", "transcript", "exon", "region"].includes((f[2] ?? "").toLowerCase()))) return null; const gff3 = (f[8] ?? "").includes("="); return { role: "annotation", format: gff3 ? "GFF3" : "GTF", evidence: "9-column feature record with genomic coordinates", confidence: 0.97, inferred: false }; } },
@@ -65,7 +67,7 @@ async function boundedHeader(file: File, limit = 64 * 1024) {
     while (output.length < limit) { const item = await reader.read(); if (item.done) break; output += decoder.decode(item.value, { stream: true }); if (output.includes("\n")) break; }
     await reader.cancel(); text = output;
   } else text = await file.slice(0, limit).text();
-  return normalizedHeader(text);
+  return text.trimStart().startsWith("{") ? text.slice(0, limit) : normalizedHeader(text);
 }
 
 function filenameRole(match: DetectorMatch, path: string): { role: InputRole; inferred: boolean; evidence: string[] } {
@@ -73,7 +75,7 @@ function filenameRole(match: DetectorMatch, path: string): { role: InputRole; in
   if (match.format === "BigWig") {
     const plus = /(^|[._/-])(plus|pos|forward|fwd|sense)([._/-]|$)/i.test(path);
     const minus = /(^|[._/-])(minus|neg|reverse|rev|antisense)([._/-]|$)/i.test(path);
-    const control = /control|ctrl|vehicle|untreated|0hr|0h/i.test(path); const treatment = /treat|dtag|agb|degrad|perturb|\b[124]h\b/i.test(path);
+    const control = /(?:^|[._/-])(?:control|ctrl|vehicle|untreated|0(?:hr|h|min))(?:[._/-]|$)/i.test(path); const treatment = !control && /treat|dtag|agb|degrad|perturb|(?:^|[_ .-])\d+(?:\.\d+)?(?:hr|h|min)(?:[_ .-]|$)/i.test(path);
     if (plus !== minus && control !== treatment) { role = control ? (plus ? "controlPlus" : "controlMinus") : (plus ? "treatmentPlus" : "treatmentMinus"); evidence.push("Filename/path suggests strand and condition (inferred; confirm before analysis)"); return { role, inferred: true, evidence }; }
   }
   if (role === "unknown" && /bidirectional_enhancers\.bed$/i.test(lower)) { role = "filteredBed"; inferred = true; evidence.push("Known eRNA_diff SAF-derived BED filename; coordinate correction applies only to this role"); }
@@ -86,24 +88,27 @@ function filenameRole(match: DetectorMatch, path: string): { role: InputRole; in
   return { role, inferred, evidence };
 }
 
-export async function inspectFile(file: File, index = 0): Promise<ImportedFile> {
+export async function inspectFile(file: File): Promise<ImportedFile> {
   const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
   const header = await boundedHeader(file); const context = { file, relativePath: path, header };
   const match = detectorPlugins.map((plugin) => plugin.detect(context)).find((candidate) => candidate !== null);
-  if (!match) return { id: `${index}:${path}:${file.size}`, file, path, role: "unknown", suggestedRole: "unknown", format: "Unrecognized", evidence: ["No registered signature/schema matched within the bounded header."], confidence: 0, recognition: "unassigned" };
+  if (!match) return { id: `${path}:${file.size}:${file.lastModified}`, file, path, role: "unknown", suggestedRole: "unknown", format: "Unrecognized", evidence: ["No registered signature/schema matched within the bounded header."], confidence: 0, recognition: "unassigned" };
   const inferred = filenameRole(match, path);
-  return { id: `${index}:${path}:${file.size}`, file, path, role: inferred.role, suggestedRole: inferred.role, format: match.format, evidence: inferred.evidence, confidence: inferred.inferred ? 0.8 : match.confidence,
+  return { id: `${path}:${file.size}:${file.lastModified}`, file, path, role: inferred.role, suggestedRole: inferred.role, format: match.format, evidence: inferred.evidence, confidence: inferred.inferred ? 0.8 : match.confidence,
     recognition: inferred.inferred ? "inferred" : "structurally_verified" };
 }
 
 export async function inspectFiles(files: File[]) {
-  const imported = await Promise.all(files.map((file, index) => inspectFile(file, index)));
+  if (files.length > 2000) throw new Error("Select at most 2,000 processed files per addition. Raw reads and alignment files are not analysis inputs.");
+  const imported: ImportedFile[] = [];
+  for (let start = 0; start < files.length; start += 8) imported.push(...await Promise.all(files.slice(start, start + 8).map((file) => inspectFile(file))));
   const byDigest = new Map<string, ImportedFile>();
   for (const item of imported) {
     // Hash small tables to identify exact duplicates; never read large tracks/matrices just for duplicate checking.
     if (item.file.size > 2 * 1024 * 1024 || !globalThis.crypto?.subtle) continue;
     const digest = await globalThis.crypto.subtle.digest("SHA-256", await item.file.arrayBuffer());
     const key = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    item.sha256 = key;
     const first = byDigest.get(key);
     if (first) item.duplicateOf = first.id; else byDigest.set(key, item);
   }

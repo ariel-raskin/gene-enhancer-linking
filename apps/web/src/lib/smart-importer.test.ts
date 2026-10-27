@@ -15,6 +15,8 @@ describe("local smart file importer", () => {
     expect(match.format).toBe("BigWig"); expect(match.role).toBe("treatmentPlus"); expect(match.recognition).toBe("inferred");
     const unclear = await inspectFile(new File([bytes], "signal.bw"));
     expect(unclear.role).toBe("unknown"); expect(unclear.recognition).toBe("structurally_verified");
+    expect((await inspectFile(new File([bytes],"drug_10hr_plus.bw"))).role).toBe("treatmentPlus");
+    expect((await inspectFile(new File([bytes],"0min_minus.bw"))).role).toBe("controlMinus");
   });
 
   it("recognizes audited eNRSA tables by their columns, independent of their filenames", async () => {

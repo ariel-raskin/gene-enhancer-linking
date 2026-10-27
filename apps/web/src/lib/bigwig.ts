@@ -1,10 +1,12 @@
+import { AnalysisCache } from "./analysis-cache";
+import { readLocalText } from "./read-local-text";
 import { BigWig } from "@gmod/bbi";
 import { BlobFile } from "generic-filehandle2";
 import { buildLinks, importGenes, type Differential, type Parameters } from "./analysis";
 
 export type BigWigRequest = {
   files: { controlPlus: File; controlMinus: File; treatmentPlus: File; treatmentMinus: File };
-  annotationFile: File; annotationFormat: "gtf" | "tsv" | "bed"; annotationCoordinates: "zero_based_half_open" | "one_based_inclusive";
+  annotationFile: File; annotationFormat: "gtf" | "gff" | "tsv" | "bed" | "saf"; annotationCoordinates: "zero_based_half_open" | "one_based_inclusive";
   genomeAssembly: string; normalization: string; contrast: string;
   region: { chrom: string; start: number; end: number }; parameters: Parameters;
 };
@@ -60,13 +62,13 @@ async function open(file: File) {
   return { bw, header };
 }
 
-export async function runBigWigAnalysis(request: BigWigRequest, progress: (message: string) => void) {
+export async function runBigWigAnalysis(request: BigWigRequest, progress: (message: string) => void, cache?: AnalysisCache) {
   const { files, region, parameters } = request;
   if (!request.genomeAssembly.trim() || !request.normalization.trim() || !request.contrast.trim()) throw new Error("Genome assembly, normalization description, and explicit contrast are required.");
   if (!region.chrom || region.start < 0 || region.end <= region.start) throw new Error("Enter a valid 0-based half-open scan interval.");
   if (region.end - region.start > parameters.maxGenomeBases) throw new Error(`This browser build limits BigWig analysis to ${parameters.maxGenomeBases.toLocaleString()} bases per run.`);
   if (request.annotationFile.size > MAX_ANNOTATION_BYTES) throw new Error("Gene annotation exceeds the 150 MB browser limit. Use a chromosome/region-filtered GTF or TSV.");
-  const annotationText = await request.annotationFile.text();
+  const annotationText = await (cache ? cache.readText(request.annotationFile) : readLocalText(request.annotationFile));
   const genes = importGenes(annotationText, request.annotationFormat, request.annotationCoordinates);
   const selectedGenes = genes.filter((g) => g.chrom === region.chrom && g.end > region.start - parameters.maxDistanceBp && g.start < region.end + parameters.maxDistanceBp);
   if (!selectedGenes.length) throw new Error("No genes from the annotation overlap the scan interval or its candidate distance flank.");
@@ -83,9 +85,14 @@ export async function runBigWigAnalysis(request: BigWigRequest, progress: (messa
     const rangeBytes = await Promise.all(entries.map(({ bw }) => bw.getRegionByteSize(region.chrom, region.start, region.end)));
     if (rangeBytes.reduce((a, b) => a + b, 0) > MAX_QUERY_BYTES) throw new Error("This indexed query exceeds the 64 MB compressed-block budget. Narrow the genomic interval.");
     progress(`Reading indexed signal blocks (${rangeBytes.reduce((a, b) => a + b, 0).toLocaleString()} bytes estimated).`);
-    const read = async (bw: Wig) => (await bw.getFeatures(region.chrom, region.start, region.end)).map((f) => ({ start: f.start, end: f.end, score: Number(f.score) })).filter((f) => Number.isFinite(f.score));
-    const cpBlocks = await read(cp); progress("Read control plus strand."); const cmBlocks = await read(cm); progress("Read control minus strand.");
-    const tpBlocks = await read(tp); progress("Read treatment plus strand."); const tmBlocks = await read(tm); progress("Read treatment minus strand.");
+    const read = async (bw: Wig, file: File) => {
+      const key=`${region.chrom}:${region.start}-${region.end}`; const previous=cache?.getBlocks(file,key);
+      if(previous) return previous;
+      const blocks=(await bw.getFeatures(region.chrom, region.start, region.end)).map((f) => ({ start:f.start,end:f.end,score:Number(f.score) })).filter(f=>Number.isFinite(f.score));
+      cache?.setBlocks(file,key,blocks); return blocks;
+    };
+    const cpBlocks = await read(cp, files.controlPlus); progress("Read control plus strand."); const cmBlocks = await read(cm, files.controlMinus); progress("Read control minus strand.");
+    const tpBlocks = await read(tp, files.treatmentPlus); progress("Read treatment plus strand."); const tmBlocks = await read(tm, files.treatmentMinus); progress("Read treatment minus strand.");
     const bin = Math.max(10, Math.floor(parameters.peakBinBp));
     const bins = [binned(cpBlocks, region.start, region.end, bin), binned(cmBlocks, region.start, region.end, bin), binned(tpBlocks, region.start, region.end, bin), binned(tmBlocks, region.start, region.end, bin)];
     const meanBins = new Float64Array(bins[0].length);

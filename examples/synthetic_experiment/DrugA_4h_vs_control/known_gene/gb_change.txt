@@ -1,0 +1,2 @@
+Transcript	Gene	baseMean	log2FoldChange	lfcSE	stat	pvalue	padj
+TX_DEMO1	GENE_CONC	120	0.2	.2	4	.001	.01

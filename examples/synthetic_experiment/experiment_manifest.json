@@ -1,0 +1,443 @@
+{
+  "schema_version": 2,
+  "product": "GEL Web",
+  "experimentId": "synthetic-multi-v1",
+  "assembly": "synthetic-demo-v1",
+  "annotationProvenance": "Synthetic chrDemo genes, 0-based half-open; eNRSA coordinates remain 1-based inclusive",
+  "model": "Synthetic eNRSA-schema statistics; illustrative p-values, not a fitted model",
+  "normalization": "Synthetic common signal scale; identical A/B signals have the literal average supplied",
+  "scope": {
+    "chrom": "chrDemo",
+    "start": 0,
+    "end": 10000
+  },
+  "regionalStatistics": true,
+  "samples": [
+    {
+      "id": "control_A",
+      "condition": "control",
+      "timePoint": "0h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "control_B",
+      "condition": "control",
+      "timePoint": "0h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_1h_A",
+      "condition": "DrugA_1h",
+      "timePoint": "1h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_1h_B",
+      "condition": "DrugA_1h",
+      "timePoint": "1h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_2h_A",
+      "condition": "DrugA_2h",
+      "timePoint": "2h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_2h_B",
+      "condition": "DrugA_2h",
+      "timePoint": "2h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_4h_A",
+      "condition": "DrugA_4h",
+      "timePoint": "4h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_4h_B",
+      "condition": "DrugA_4h",
+      "timePoint": "4h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_8h_A",
+      "condition": "DrugA_8h",
+      "timePoint": "8h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugA_8h_B",
+      "condition": "DrugA_8h",
+      "timePoint": "8h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_1h_A",
+      "condition": "DrugB_1h",
+      "timePoint": "1h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_1h_B",
+      "condition": "DrugB_1h",
+      "timePoint": "1h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_2h_A",
+      "condition": "DrugB_2h",
+      "timePoint": "2h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_2h_B",
+      "condition": "DrugB_2h",
+      "timePoint": "2h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_4h_A",
+      "condition": "DrugB_4h",
+      "timePoint": "4h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_4h_B",
+      "condition": "DrugB_4h",
+      "timePoint": "4h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_8h_A",
+      "condition": "DrugB_8h",
+      "timePoint": "8h",
+      "biologicalReplicate": "A",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    },
+    {
+      "id": "DrugB_8h_B",
+      "condition": "DrugB_8h",
+      "timePoint": "8h",
+      "biologicalReplicate": "B",
+      "batch": "",
+      "matchedBlock": "",
+      "provenance": "Synthetic independently labeled biological replicate; matching not established"
+    }
+  ],
+  "contrasts": [
+    {
+      "id": "synthetic_experiment/DrugA_1h_vs_control",
+      "label": "DrugA_1h_vs_control",
+      "control": "control",
+      "treatment": "DrugA_1h",
+      "perturbation": "DrugA",
+      "timePoint": "1h",
+      "assembly": "",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugA_1h_A",
+        "DrugA_1h_B"
+      ],
+      "controlTrackSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentTrackSampleIds": [
+        "DrugA_1h_A",
+        "DrugA_1h_B"
+      ],
+      "controlTrackSource": "averaged",
+      "treatmentTrackSource": "averaged",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugA_1h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugA_1h_vs_control/known_gene/normalized_pp_gb.txt",
+        "enhancerChange": "synthetic_experiment/DrugA_1h_vs_control/eRNA/Enhancer_change.txt",
+        "annotation": "synthetic_experiment/genes.tsv",
+        "controlPlus": "synthetic_experiment/tracks/control_avg.plus.bw",
+        "controlMinus": "synthetic_experiment/tracks/control_avg.minus.bw",
+        "treatmentPlus": "synthetic_experiment/tracks/DrugA_1h_avg.plus.bw",
+        "treatmentMinus": "synthetic_experiment/tracks/DrugA_1h_avg.minus.bw"
+      },
+      "mode": "combined",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    },
+    {
+      "id": "synthetic_experiment/DrugA_2h_vs_control",
+      "label": "DrugA_2h_vs_control",
+      "control": "control",
+      "treatment": "DrugA_2h",
+      "perturbation": "DrugA",
+      "timePoint": "2h",
+      "assembly": "",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugA_2h_A",
+        "DrugA_2h_B"
+      ],
+      "controlTrackSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentTrackSampleIds": [
+        "DrugA_2h_A",
+        "DrugA_2h_B"
+      ],
+      "controlTrackSource": "averaged",
+      "treatmentTrackSource": "averaged",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugA_2h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugA_2h_vs_control/known_gene/normalized_pp_gb.txt",
+        "enhancerChange": "synthetic_experiment/DrugA_2h_vs_control/eRNA/Enhancer_change.txt",
+        "annotation": "synthetic_experiment/genes.tsv",
+        "controlPlus": "synthetic_experiment/tracks/control_avg.plus.bw",
+        "controlMinus": "synthetic_experiment/tracks/control_avg.minus.bw",
+        "treatmentPlus": "synthetic_experiment/tracks/DrugA_2h_avg.plus.bw",
+        "treatmentMinus": "synthetic_experiment/tracks/DrugA_2h_avg.minus.bw"
+      },
+      "mode": "combined",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    },
+    {
+      "id": "synthetic_experiment/DrugA_4h_vs_control",
+      "label": "DrugA_4h_vs_control",
+      "control": "control",
+      "treatment": "DrugA_4h",
+      "perturbation": "DrugA",
+      "timePoint": "4h",
+      "assembly": "",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugA_4h_A",
+        "DrugA_4h_B"
+      ],
+      "controlTrackSampleIds": [],
+      "treatmentTrackSampleIds": [],
+      "controlTrackSource": "averaged",
+      "treatmentTrackSource": "averaged",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugA_4h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugA_4h_vs_control/known_gene/normalized_pp_gb.txt",
+        "enhancerChange": "synthetic_experiment/DrugA_4h_vs_control/eRNA/Enhancer_change.txt"
+      },
+      "mode": "enrsa",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    },
+    {
+      "id": "synthetic_experiment/DrugA_8h_vs_control",
+      "label": "DrugA_8h_vs_control",
+      "control": "control",
+      "treatment": "DrugA_8h",
+      "perturbation": "DrugA",
+      "timePoint": "8h",
+      "assembly": "",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugA_8h_A",
+        "DrugA_8h_B"
+      ],
+      "controlTrackSampleIds": [],
+      "treatmentTrackSampleIds": [],
+      "controlTrackSource": "averaged",
+      "treatmentTrackSource": "averaged",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugA_8h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugA_8h_vs_control/known_gene/normalized_pp_gb.txt"
+      },
+      "mode": "enrsa",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    },
+    {
+      "id": "synthetic_experiment/DrugB_1h_vs_control",
+      "label": "DrugB_1h_vs_control",
+      "control": "control",
+      "treatment": "DrugB_1h",
+      "perturbation": "DrugB",
+      "timePoint": "1h",
+      "assembly": "",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugB_1h_A",
+        "DrugB_1h_B"
+      ],
+      "controlTrackSampleIds": [
+        "control_A"
+      ],
+      "treatmentTrackSampleIds": [
+        "DrugB_1h_A"
+      ],
+      "controlTrackSource": "replicate",
+      "treatmentTrackSource": "replicate",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugB_1h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugB_1h_vs_control/known_gene/normalized_pp_gb.txt",
+        "enhancerChange": "synthetic_experiment/DrugB_1h_vs_control/eRNA/Enhancer_change.txt",
+        "annotation": "synthetic_experiment/genes.tsv",
+        "controlPlus": "synthetic_experiment/tracks/control_A.plus.bw",
+        "controlMinus": "synthetic_experiment/tracks/control_A.minus.bw",
+        "treatmentPlus": "synthetic_experiment/tracks/DrugB_1h_A.plus.bw",
+        "treatmentMinus": "synthetic_experiment/tracks/DrugB_1h_A.minus.bw"
+      },
+      "mode": "combined",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    },
+    {
+      "id": "synthetic_experiment/DrugB_2h_vs_control",
+      "label": "DrugB_2h_vs_control",
+      "control": "control",
+      "treatment": "DrugB_2h",
+      "perturbation": "DrugB",
+      "timePoint": "2h",
+      "assembly": "",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugB_2h_A",
+        "DrugB_2h_B"
+      ],
+      "controlTrackSampleIds": [],
+      "treatmentTrackSampleIds": [],
+      "controlTrackSource": "replicate",
+      "treatmentTrackSource": "replicate",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugB_2h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugB_2h_vs_control/known_gene/normalized_pp_gb.txt",
+        "enhancerChange": "synthetic_experiment/DrugB_2h_vs_control/eRNA/Enhancer_change.txt"
+      },
+      "mode": "enrsa",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    },
+    {
+      "id": "synthetic_experiment/DrugB_4h_vs_control",
+      "label": "DrugB_4h_vs_control",
+      "control": "control",
+      "treatment": "DrugB_4h",
+      "perturbation": "DrugB",
+      "timePoint": "4h",
+      "assembly": "",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugB_4h_A",
+        "DrugB_4h_B"
+      ],
+      "controlTrackSampleIds": [],
+      "treatmentTrackSampleIds": [],
+      "controlTrackSource": "replicate",
+      "treatmentTrackSource": "replicate",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugB_4h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugB_4h_vs_control/known_gene/normalized_pp_gb.txt",
+        "enhancerChange": "synthetic_experiment/DrugB_4h_vs_control/eRNA/Enhancer_change.txt"
+      },
+      "mode": "enrsa",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    },
+    {
+      "id": "synthetic_experiment/DrugB_8h_vs_control",
+      "label": "DrugB_8h_vs_control",
+      "control": "control",
+      "treatment": "DrugB_8h",
+      "perturbation": "DrugB",
+      "timePoint": "8h",
+      "assembly": "incompatible-build",
+      "controlSampleIds": [
+        "control_A",
+        "control_B"
+      ],
+      "treatmentSampleIds": [
+        "DrugB_8h_A",
+        "DrugB_8h_B"
+      ],
+      "controlTrackSampleIds": [],
+      "treatmentTrackSampleIds": [],
+      "controlTrackSource": "replicate",
+      "treatmentTrackSource": "replicate",
+      "bindings": {
+        "gbChange": "synthetic_experiment/DrugB_8h_vs_control/known_gene/gb_change.txt",
+        "normalizedPpGb": "synthetic_experiment/DrugB_8h_vs_control/known_gene/normalized_pp_gb.txt",
+        "enhancerChange": "synthetic_experiment/DrugB_8h_vs_control/eRNA/Enhancer_change.txt"
+      },
+      "mode": "enrsa",
+      "geneFormat": "tsv",
+      "geneCoordinates": "zero_based_half_open"
+    }
+  ]
+}

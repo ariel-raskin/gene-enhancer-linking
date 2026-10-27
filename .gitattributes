@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.bw binary
+*.bigwig binary
+*.png binary
+*.zip binary
