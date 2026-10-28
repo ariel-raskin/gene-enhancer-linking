@@ -6,7 +6,7 @@ Feature branch `feat/persistent-results-v06`, based on `73921fe66cf8514e97e5cf76
 
 ## Established checks
 
-- 68 TypeScript unit tests pass, including all frozen scientific fixtures, generator/collector parity, storage-backpressure failure propagation and ZIP64 CRC/abort tests.
+- 69 TypeScript unit tests pass, including all frozen scientific fixtures, generator/collector parity, storage-backpressure failure propagation and ZIP64 CRC/abort tests.
 - Windows Python: 17 passed, one optional pyBigWig integration skipped. Linux CI retains the optional integration.
 - Typecheck, lint and production build passed on the final implementation. Final-head CI push and PR runs 40620330050 and 40620335256 passed all Python/web jobs (18 Python tests, 68 TypeScript tests, 15 active browser tests and two opt-in private skips).
 - Browser experiment tests exercised six successful shared-control contrasts, one incomplete and one excluded comparison, separate model/track layers, corrupt-contrast isolation and cancellation.
@@ -135,3 +135,6 @@ A separate chromosome-21 run used six averaged strand BigWigs (1,628,648,435 byt
 The first two-contrast private harness waited for a manual organize button although multi-contrast selection had already opened experiment review. That harness was stopped before analysis; it now accepts either supported entry path and applies bounded action waits. The corrected run above passed. Synthetic CI already tests both folder-driven automatic and manual-organize entry paths.
 
 Private full tables, reports and browser profiles remain under the researcher's separate validation workspace; only aggregate performance and parity findings are public. The remaining release action is public production verification after green final-commit checks and merge; the Vercel preview is account-protected and was not workflow-verified.
+
+
+Final ordering review added a regression with distinct composed/decomposed Unicode identifiers that compare equal under locale collation. Reversing input initially changed the generator's tie order; locale-independent code-unit tie ordering now passes. No identifiers are normalized or collapsed, and no membership, effect, evidence, coordinate or frozen fixture definition changed. The complete TypeScript suite is now 69 tests; the 68-test capacity measurements above predate this ordering-only correction. Final-commit CI and public production verification are recorded in release PR #9.

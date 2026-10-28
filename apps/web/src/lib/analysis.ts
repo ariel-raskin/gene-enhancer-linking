@@ -256,13 +256,14 @@ export function promoterOverlap(enhancer: Differential, gene: Gene, params: Para
 }
 
 export function* iterateLinks(genes: Gene[], geneStats: Differential[], enhancers: Differential[], params: Parameters, metadata: { contrast: string; compatibility: Compatibility; morphologyById?: Map<string, string>; source: "differential" | "bigwig"; maxLinks?: number }) {
+  const order=(a:string,b:string)=>a<b?-1:a>b?1:0; // Locale-independent ordering; distinct source IDs never collapse through collation.
   const geneStat = new Map(geneStats.map((stat) => [stat.featureId, stat]));
   let count = 0;
   const byChrom = new Map<string, Differential[]>();
   for (const enhancer of enhancers) { const list = byChrom.get(enhancer.chrom) ?? []; list.push(enhancer); byChrom.set(enhancer.chrom, list); }
-  for (const list of byChrom.values()) list.sort((a, b) => a.start - b.start || a.end - b.end || a.featureId.localeCompare(b.featureId));
+  for (const list of byChrom.values()) list.sort((a, b) => a.start - b.start || a.end - b.end || order(a.featureId,b.featureId));
   const maxLength = new Map([...byChrom].map(([chrom, list]) => [chrom, list.reduce((largest, item) => Math.max(largest, item.end - item.start), 1)]));
-  for (const gene of [...genes].sort((a,b)=>a.chrom.localeCompare(b.chrom)||a.start-b.start||a.end-b.end||a.geneId.localeCompare(b.geneId))) {
+  for (const gene of [...genes].sort((a,b)=>order(a.chrom,b.chrom)||a.start-b.start||a.end-b.end||order(a.geneId,b.geneId))) {
     const tssPos = tss(gene); const stat = geneStat.get(gene.geneId); const list = byChrom.get(gene.chrom) ?? [];
     const leftBound = tssPos - params.maxDistanceBp - (maxLength.get(gene.chrom) ?? 1);
     const rightBound = tssPos + params.maxDistanceBp;

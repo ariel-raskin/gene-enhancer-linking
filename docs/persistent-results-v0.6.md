@@ -66,7 +66,7 @@ Quota failures, conflicting checkpoints, corrupt/missing payloads and worker fai
 
 Gene search uses exact case-insensitive identifiers/symbols and deduplicates their union without a full candidate-ID set. Enhancer drilldown, chromosome, contrast and tier use indexes. Unfiltered pages use indexed counts and keyset reads. Residual combinations, including morphology, coordinate overlap and statistical availability, inspect the selected index population in a worker, count exactly, and retain only the next 100 sorted matches. These filters are bounded in memory but may be slow on very large populations.
 
-Stable sorting uses genomic position, contrast and source link ID, with distance/magnitude prefixes when selected. Candidate IDs remain `encodeURIComponent(contrast_id) + "::" + encodeURIComponent(link_id)`. Layers remain separate. Summary panels show the first 100 matching gene summaries; exports include all summaries. Filters never modify saved records.
+Stable sorting uses locale-independent genomic position, contrast and source link ID, with distance/magnitude prefixes when selected. Candidate IDs remain `encodeURIComponent(contrast_id) + "::" + encodeURIComponent(link_id)`. Layers remain separate. Summary panels show the first 100 matching gene summaries; exports include all summaries. Filters never modify saved records.
 
 ## Streaming export contract
 

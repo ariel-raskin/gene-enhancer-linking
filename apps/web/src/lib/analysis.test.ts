@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
-  DEFAULT_PARAMETERS, buildLinks, importEnrsaEnhancers, importEnrsaGenes, importRDeSeqEnhancers,
+  DEFAULT_PARAMETERS, buildLinks, iterateLinks, importEnrsaEnhancers, importEnrsaGenes, importRDeSeqEnhancers,
   importRFilteredBed, importGenes, toZeroBasedHalfOpen, type Differential, type Gene,
   linksToBedpe, linksToInteract, rowsToCsv,
 } from "./analysis";
@@ -40,6 +40,15 @@ describe("coordinate conversions", () => {
 describe("candidate pairs and tiers", () => {
   const gene: Gene = { geneId: "G1", symbol: "GENE1", chrom: "chr1", start: 1000, end: 2000, strand: "-" };
   const stat = (featureId: string, start: number, end: number, lfc: number, padj: number | null): Differential => ({ featureId, chrom: "chr1", start, end, log2fc: lfc, se: 0.1, pvalue: 0.01, padj, baseMean: 100, source: "fixture", sourceId: featureId, sourceCoordinates: "fixture" });
+  it("orders distinct Unicode identifiers independently of collation ties and input order", () => {
+    const genes=["G_e\u0301","G_é"].map(geneId=>({...gene,geneId,symbol:geneId}));
+    const stats=genes.map(g=>stat(g.geneId,g.start,g.end,1,.01));
+    const enhancers=["e\u0301","é"].map(id=>stat(id,2050,2100,1,.01));
+    const metadata={contrast:"x",compatibility:{status:"Compatibility unverified" as const,checks:[]},source:"differential" as const};
+    const rows=[...iterateLinks(genes,stats,enhancers,DEFAULT_PARAMETERS,metadata)];
+    expect(rows).toHaveLength(4);
+    expect([...iterateLinks([...genes].reverse(),stats,[...enhancers].reverse(),DEFAULT_PARAMETERS,metadata)]).toEqual(rows);
+  });
   it("retains multiple enhancer relationships and calls promoter/gene-body overlaps", () => {
     const enhancers = [stat("e-near", 2050, 2100, 1.1, 0.01), stat("e-body", 1950, 1995, 1.0, 0.01), stat("e-far", 300000, 300100, 1.0, 0.01)];
     const links = buildLinks([gene], [stat("G1", gene.start, gene.end, 1, 0.01)], enhancers, { ...DEFAULT_PARAMETERS, maxDistanceBp: 100000 },
