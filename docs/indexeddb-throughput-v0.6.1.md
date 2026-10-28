@@ -46,6 +46,17 @@ Both complete 240,000-row TSVs were 126,876,738 bytes with the same diagnostic c
 
 Median reported origin usage for 240,000 rows was approximately 211.25 MB versus 118.99 MB (decimal), about 44% lower. The compressed scientific payload was identical: 7,960,468 bytes in the instrumented trials. Origin estimates are noisy for small runs; use counts and verified output contents to establish completeness, not a storage-size estimate.
 
+Indexed-query medians (milliseconds, hydrated first 100 rows plus exact count):
+
+| Rows | Layout | Genomic order | Distance sort | Magnitude sort | Gene search | Enhancer search | Contrast | Coordinate + morphology |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 20,000 | v0.6 | 572 | 460 | 369 | 71 | 155 | 478 | 1,746 |
+| 20,000 | v0.6.1 | 374 | 270 | 272 | 88 | 207 | 365 | 1,410 |
+| 240,000 | v0.6 | 5,444 | 4,162 | 3,765 | 140 | 270 | 3,818 | 22,189 |
+| 240,000 | v0.6.1 | 3,670 | 5,155 | 4,730 | 95 | 212 | 2,182 | 18,929 |
+
+These include bounded batch decompression/checksum validation, not just index seeks. Results and counts matched exactly. Distance/magnitude pages were slower in the larger candidate trial; compact keys are not a universal query speedup. Composite residual filters still walk the selected index population and are a remaining latency limitation.
+
 ## Actual bottleneck and alternatives
 
 Disjoint stage measurements in a 240,000-row baseline trial found approximately 102.8 of 121.0 commit seconds waiting for queued rows and gene-summary requests. The nested last-row drain diagnostic was 102.2 s, showing that most of that interval precedes completion of row/index writes. It must **not** be added again to the parent interval. Synchronous projection/enqueue took about 10.3 s; serialization/encoding/hashing/compression together about 5.1 s. The final transaction-completion wait was about 1.8 s; quota checks about 0.28 s. Browser APIs do not expose the CPU time of each internal secondary-index mutation; index ablation and layout comparisons measure their combined effect.
