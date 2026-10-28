@@ -100,6 +100,27 @@ The query worker reports indexed-query and summary wall times separately. Export
 
 ## Release validation and real data
 
-In progress: final full regression suites, real chromosome-21/1 reruns and the annotated-genome trial at signal floor **0.08** and distance **100,000 bp**. No whole-genome completion is claimed until its terminal state, saved counts and full export have been checked. Private source files and derived coordinates remain outside Git and deployment assets.
+### Windows chromosome reruns
+
+Windows 11, approximately 8 GB RAM, Chromium 156.0.8078.4, one averaged-track contrast, four later multiNF direct-coverage BigWigs totaling 1,103,731,786 bytes, and the same 2,197,669-byte compact zero-based annotation. Local and HPC SHA-256 hashes match for all five inputs. No legacy HOMER visualization build is mixed into this trial. Parameters remain signal floor **0.08**, distance **100,000 bp**, 1 Mb chunks and 1,000-row / byte-bounded commits. The configured payload budget is 12 GiB; the UI's conservative 4 GiB default remains unchanged. This is a resource-budget adjustment, not a scientific-threshold change.
+
+| Scope | Genes | Retained signal regions | Saved links | Complete processing | TSV stream + full count verification | TSV bytes |
+|---|---:|---:|---:|---:|---:|---:|
+| Chromosome 21 | 588 | 9,908 | 30,809 | 23.09 s | 11.37 s | 20,286,717 |
+| Chromosome 1 | 3,989 | 73,772 | 276,369 | 404.57 s | 121.41 s | 181,968,424 |
+
+Every streamed TSV count matched its saved count. Estimated origin usage was 42,003,868 and 272,158,487 bytes; the latter includes possible free pages from the preceding deletion in the same profile. Estimated logical payloads were 79,495,548 and 696,186,226 bytes. Coarse main-context heap readings were approximately 10 MB; these are not worker/native/process peaks. These are single real-data reruns under variable host load, not paired performance comparisons with v0.6.
+
+An independent compute-node reference job (82713, `normal`, `biochemistry`, one CPU, 16 GiB) completed in 7:20 with 3,166,516 KiB MaxRSS, producing per-chromosome reference artifacts for all 24 annotated primary chromosomes. The frozen Python implementation predicts 42,611 genes, 820,582 retained signal regions and 2,771,256 links over 3,088,269,832 bases. This is a reference prediction count, **not yet a claim of successful browser-genome completion**. Retained signal morphology does not establish enhancer function.
+
+Chromosome-21 field comparison job 82903 completed in two seconds / 123,616 KiB MaxRSS. All 17 scientific link fields, gene annotations/responses and enhancer measurements matched; integrals matched exactly and maximum LFC error was approximately 1.11e-16. Numerical tolerances remain 1e-9 for LFC and `max(1e-6, abs(expected)*1e-12)` for integrals, with actual observed errors reported separately.
+
+### Capacity and test status
+
+Final annotated-genome browser validation is in progress. The Windows full-suite attempt encountered cold navigation and teardown timeouts; a subsequent functional rerun timed out during a download and was stopped. After the real chromosome scans/export succeeded, test-only object readback stalled under severe memory pressure. Later fresh Chromium 156 and installed Chrome 155.0.8059.86 attempts could not load the workspace within 120 seconds. No genome scan began in those attempts. The server independently returned HTTP 200 in about 0.24 s. An unrelated desktop process used roughly 4.6 GB, with observed free physical memory falling to about 2 MB. It was not terminated. This is not evidence of a completed or partially scanned Windows genome workload.
+
+Private parity capture now compresses bounded JSON-line batches in a worker and transfers only 64 KiB compressed blocks through test-local DevTools IPC. That bridge is test instrumentation, not an application backend. Linux browser trials use an isolated runtime and public static application build in a bounded two-CPU / 16-GiB allocation, with a 2-GiB V8 heap flag per isolate (not a total native/process cap), the same inputs/settings and a 60-minute scan bound. GPFS and node-local SSD profiles are separate fresh trials. Their results will be recorded separately from Windows; hardware/filesystem changes are not attributed to this code's speedup.
+
+Private source files and derived coordinates remain outside Git and deployment assets. The new HPC validation directory is restricted to its owner. Source sequencing and original research project files are unchanged.
 
 Browser limitations and safety ceilings remain as documented in [v0.6](persistent-results-v0.6.md): bounded batches and queries, explicit storage budgets/quota reserve, no safe resume, no permanence guarantee, 64 MiB whole-Blob fallback, and a configured 16 GiB direct ZIP ceiling. Firefox/Safari and native save-dialog interaction are not established by Chromium/OPFS-handle tests.
