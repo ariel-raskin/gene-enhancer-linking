@@ -32,7 +32,9 @@ test("optional private dense HEL default-distance persistence and streaming capa
  await page.getByLabel("Maximum TSS distance (bp)",{exact:true}).fill("100000");await page.getByLabel("Chunk bases").fill("1000000");await page.getByLabel("Local result budget GiB").fill(process.env.GEL_PRIVATE_BUDGET??"2");
  await page.getByLabel("Storage write batch rows").fill(process.env.GEL_PRIVATE_BATCH??"500");
  // Optional diagnostic reader wait; the compiled application's open/write limits remain unchanged.
- const readerWaitMs=Number(process.env.GEL_PRIVATE_READER_WAIT_MS??10000),source=(await storeScript()).replace("},10000);",`},${readerWaitMs});`).replace("within 10 seconds",`within ${readerWaitMs/1000} seconds`),profiles:Record<string,unknown>[]=[];
+ const readerWaitMs=Number(process.env.GEL_PRIVATE_READER_WAIT_MS??10000),readerBase=await storeScript(),timerAnchor=/},\s*10000\);/;
+ if(!Number.isSafeInteger(readerWaitMs)||readerWaitMs<10000||!timerAnchor.test(readerBase))throw new Error("Invalid diagnostic reader wait or missing transpiled timer anchor.");
+ const source=readerBase.replace(timerAnchor,`},${readerWaitMs});`).replace("within 10 seconds",`within ${readerWaitMs/1000} seconds`),profiles:Record<string,unknown>[]=[];
  const cases=process.env.GEL_PRIVATE_CASES?.split(",")??["chromosome","genome","lower-signal"];
  for(const name of cases){await page.getByLabel("Genomic scope",{exact:true}).selectOption(name.startsWith("chromosome")?"chromosomes":"genome");await page.getByLabel("Selected chromosomes").fill(name==="chromosome-1"?"chr1":"chr21");await page.getByLabel("Minimum mean signal",{exact:true}).fill(name==="lower-signal"||name==="chromosome-low"?"0.04":name==="chromosome-lower"?"0.02":"0.08");
   await page.evaluate(()=>{const w=window as unknown as {ticks:number;timer:number;heap:number};w.ticks=0;w.heap=0;w.timer=window.setInterval(()=>{w.ticks++;w.heap=Math.max(w.heap,(performance as Performance&{memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0);},100);});

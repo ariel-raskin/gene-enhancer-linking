@@ -80,7 +80,9 @@ Read [v0.6 architecture and limits](docs/persistent-results-v0.6.md) and [valida
 
 New runs use compact internal database keys while retaining the same scientific records, public identifiers, indexed queries, strict atomic commits and export formats. Existing v0.6 runs remain explorable and exportable through their original layout; their numerical data are read-only. No saved run is automatically reset or deleted. Close other GEL tabs if a schema upgrade is blocked.
 
-The paired 240,000-row synthetic benchmark measured about 42% less persistence time and 44% less estimated origin storage. This is a storage improvement, not evidence of greater biological accuracy or unlimited browser capacity. See the [performance and integrity report](docs/indexeddb-throughput-v0.6.1.md) for measurements, real-data validation status, legacy compatibility and reproducible benchmark commands. Scientific thresholds and safety limits are unchanged.
+The paired 240,000-row synthetic benchmark measured about 42% less persistence time and 44% less estimated origin storage. A private, default-density annotated-genome trial completed with **2,771,256 links**, exact Python membership/coordinate/class parity, and a complete **1.826 GB TSV**. It used Chromium on a four-CPU / 16-GiB Linux allocation, node-local storage and a configured **12-GiB logical budget**; the app's protective **4-GiB default remains unchanged**. Windows real-data validation completed chromosomes 21 and 1; whole-genome capacity on that 8-GB Windows host remains unestablished.
+
+This is a storage improvement, not evidence of greater biological accuracy or unlimited browser capacity. The [performance and integrity report](docs/indexeddb-throughput-v0.6.1.md) records timings, the recovered test-collector failure, legacy compatibility, complete ZIP CRC checks, query limitations and reproducible commands. Scientific thresholds and safety limits are unchanged.
 
 ## Development
 

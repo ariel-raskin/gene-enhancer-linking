@@ -1,0 +1,150 @@
+{
+  "kind": "Private real-data capacity aggregates only; no candidate coordinates or measurements",
+  "environment": {
+    "os": "RHEL 9.6",
+    "browser": "Chromium 156.0.8078.4",
+    "allocationCpus": 4,
+    "allocationMemoryGiB": 16,
+    "profileFilesystem": "node-local SSD",
+    "v8HeapFlagMiBPerIsolate": 2048,
+    "logicalBudgetGiB": 12,
+    "inputBigWigBytes": 1103731786,
+    "annotationBytes": 2197669,
+    "contrastCount": 1,
+    "trackSource": "later multiNF direct-coverage averaged tracks; signed minus",
+    "annotatedContigs": 24,
+    "genomicBases": 3088269832
+  },
+  "parameters": {
+    "maxDistanceBp": 100000,
+    "minGeneAbsLfc": 0.5,
+    "minEnhancerAbsLfc": 0.5,
+    "maxPadj": 0.05,
+    "peakBinBp": 100,
+    "minMeanSignal": 0.08,
+    "mergeGapBp": 100,
+    "maxMagnitudeGapLfc": 2,
+    "requireDirection": true,
+    "compareMagnitude": true,
+    "morphologyClasses": [
+      "divergent_outward",
+      "asymmetric_divergent",
+      "unidirectional_outward_candidate",
+      "unidirectional_or_readthrough",
+      "bidirectional_mixed_geometry",
+      "low_signal_ambiguous",
+      "asymmetric_uncertain"
+    ],
+    "excludePromoters": false,
+    "excludeGeneBody": false,
+    "promoterUpstreamBp": 1000,
+    "promoterDownstreamBp": 100,
+    "pseudocount": 1,
+    "maxGenomeBases": 50000000
+  },
+  "regionalOnlyParameterNote": "maxGenomeBases is the unchanged single-interval guard, not the annotated-genome scope size.",
+  "result": {
+    "state": "complete",
+    "rows": 2771256,
+    "estimatedBytes": 7070835460,
+    "batches": 3847,
+    "scanRecordedSpanMs": 2117446,
+    "queryMs": 21804.800000190735,
+    "indexedCount": 2771256,
+    "pageRows": 100,
+    "fileStats": {
+      "bytes": 1825903016,
+      "dataRows": 2771256
+    },
+    "exportStreamMs": 121659.39999961853,
+    "exportAndReadbackMs": 128936.30000019073,
+    "metadataUnchanged": true,
+    "storage": {
+      "quota": 13304430688,
+      "usage": 2567012448,
+      "usageDetails": {
+        "indexedDB": 2567012448
+      }
+    },
+    "linksCount": 2771256,
+    "geneCount": 42611,
+    "enhancerCount": 820582,
+    "uiReopened": true
+  },
+  "storageProfile": {
+    "classTransactions": 4177,
+    "classWriteTransactions": 4128,
+    "classReadTransactions": 49,
+    "packingValidationMs": 12167.999906539917,
+    "calls": 3847,
+    "quotaWallMs": 1603.60000705719,
+    "validationSerializationMs": 21578.400003433228,
+    "rowEncodingHashMs": 30876.99998664856,
+    "compressionWallMs": 32629.30000782013,
+    "payloadBytes": 207857425,
+    "encodedBytes": 3066921090,
+    "peakBuffersEstimate": 3223290,
+    "checkpointHashMs": 22661.400000572205,
+    "transactionCreateMs": 308.4000053405762,
+    "transactions": 3847,
+    "checkpointRunReadWaitMs": 5837.399980545044,
+    "featureAdds": 863193,
+    "featureEnqueueMs": 19628.699993133545,
+    "projectionEnqueueMs": 160775.80000972748,
+    "attemptedRows": 2771256,
+    "rowIndexEntries": 24941304,
+    "summaryReads": 44578,
+    "queuedRowsAndSummaryWaitMs": 1603222.199995041,
+    "summaryPuts": 44578,
+    "metadataEnqueueMs": 4057.7000064849854,
+    "commitWaitMs": 132307.40005397797,
+    "commitWallMs": 2035494.8000497818,
+    "committedRows": 2771256,
+    "generationMs": 1959.2000532150269,
+    "rowDrainNestedMs": 1595376.8000011444,
+    "partitionWallMs": 2052427.6999998093
+  },
+  "scanJob": {
+    "id": 83956,
+    "slurmState": "FAILED",
+    "analysisState": "complete",
+    "elapsed": "00:35:57",
+    "maxRssKiB": 3408252,
+    "failure": "Test-only secondary reader timeout; its intended longer timer did not match transpiled whitespace."
+  },
+  "readbackJob": {
+    "id": 84354,
+    "state": "COMPLETED",
+    "elapsed": "00:05:33",
+    "maxRssKiB": 5501800
+  },
+  "parityJob": {
+    "id": 84393,
+    "state": "COMPLETED",
+    "elapsed": "00:01:36",
+    "maxRssKiB": 2134464
+  },
+  "independentParity": {
+    "case": "genome",
+    "counts": {
+      "links": 2771256,
+      "geneStats": 42611,
+      "enhancers": 820582
+    },
+    "membership_coordinates_classes_exact": true,
+    "source_hashes_unchanged": true,
+    "mismatches": [],
+    "max_numeric_errors": {
+      "links:gene_log2fc": 8.881784197001252e-16,
+      "links:enhancer_log2fc": 8.881784197001252e-16,
+      "geneStats:log2fc": 8.881784197001252e-16,
+      "geneStats:baseMean": 0,
+      "enhancers:log2fc": 8.881784197001252e-16,
+      "enhancers:baseMean": 0
+    },
+    "log2fc_absolute_tolerance": 1e-09,
+    "integral_tolerance": "max(1e-6, abs(expected)*1e-12)",
+    "elapsedSeconds": 94.22941143997014,
+    "maxRssKb": 2129192
+  }
+}
