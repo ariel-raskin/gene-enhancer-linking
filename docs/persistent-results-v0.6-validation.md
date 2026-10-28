@@ -8,7 +8,7 @@ Feature branch `feat/persistent-results-v06`, based on `73921fe66cf8514e97e5cf76
 
 - 68 TypeScript unit tests pass, including all frozen scientific fixtures, generator/collector parity, storage-backpressure failure propagation and ZIP64 CRC/abort tests.
 - Windows Python: 17 passed, one optional pyBigWig integration skipped. Linux CI retains the optional integration.
-- Typecheck, lint and production build passed during development; final release reruns are required.
+- Typecheck, lint and production build passed on the final implementation. Final-head CI push and PR runs 40620330050 and 40620335256 passed all Python/web jobs (18 Python tests, 68 TypeScript tests, 15 active browser tests and two opt-in private skips).
 - Browser experiment tests exercised six successful shared-control contrasts, one incomplete and one excluded comparison, separate model/track layers, corrupt-contrast isolation and cancellation.
 - Saved synthetic results reopened after page reload. Filters preserved the saved set; deleting a run removed its candidate rows. An actual browser filesystem handle exercised direct ZIP streaming and CRC validation. The automated test supplies an OPFS handle, not a human-operated native save dialog.
 
@@ -90,3 +90,48 @@ The lower-signal repeated private harness initially reused its previous finished
 ## Release interpretation
 
 This release supports tested chromosome-scale real data and larger persisted candidate populations than v0.5's retained-result cap. **Dense unrestricted whole-genome completion remains unvalidated.** The largest verified recovered population is 956,687 rows; its source analysis is partial. The largest fully completed synthetic screen is 240,000 pairs. Per-chromosome scientific guards, configurable payload limits and explicit failure states remain. Reducing database index/write amplification and repeating the default-density genome trial on a documented device is the next capacity milestone; adding a new scientific score is not required.
+
+
+## Final implementation capacity reruns
+
+Commit `5c1aa39` (plus documentation-only release records) completed the same 240,000-row synthetic workload with terminal partition markers and byte-budget validation:
+
+| Environment | Inclusive processing | Write-work metric | Direct TSV export | Measured origin usage |
+|---|---:|---:|---:|---:|
+| Windows 11 / Chromium 156.0.8078.4, production build | 509.86 s | 496.00 s | 51.59 s | 248,243,213 bytes |
+| Ubuntu GitHub runner / Chromium, CI dev server | 113.84 s | 109.23 s | 9.04 s | 265,616,232 bytes |
+
+Both retained 240,000 rows in 485 checkpoints, with 484,834,642 bytes estimated uncompressed payload. Both direct exports were exactly 147,036,738 bytes / 240,000 data rows. The second-run cancellation check stopped after actual row commits and verified that cancelled-run counters equal indexed rows. The approximately 23.1 MB main-heap reading is an endpoint observation, not a worker/native/process peak. Write-work accounting ends when counters are staged and may exclude the final transaction's completion latency; inclusive processing is the appropriate end-to-end timing.
+
+The final-head Linux native-storage suite traversed all 20,000 rows, verified gene/contrast-union counts, coordinate/morphology filtering, rollback, corruption, deletion during export, double-start rejection and oversized field/byte packing. Strict writes took 3.44 s, relaxed 3.85 s; two pages took 376.5 ms. OPFS sequential writes took 48.1 ms for 19,735,640 bytes without an index. Durability remains strict. These measurements are not universal storage benchmarks.
+
+
+The final Windows production-build browser suite passed **15 tests / two intentional private skips in 12.7 minutes**. The 20,000-row native strict test took 5.46 s versus relaxed 10.07 s; two pages took 989.8 ms. All retry, rollback, quota/headroom, corruption, snapshot deletion, byte-packing, double-start and count assertions passed. Local BigWig, eNRSA, R-DESeq2, folder import, corrections, combined-input incompatibility and privacy assertions also passed. No local failure was hidden by the successful CI run.
+
+
+## Final lower-signal private chromosome trials
+
+Using the same four real BigWigs / 588 annotated chromosome-21 genes / 46,709,983 bases, 100 kb distance, 1 Mb chunks and 1,000-row write batches:
+
+| Signal floor | Retained peaks | Links | Complete processing | Direct TSV export | TSV size |
+|---|---:|---:|---:|---:|---:|
+| 0.04 | 12,057 | 36,030 | 29.80 s | 4.97 s | 23,731,699 bytes |
+| 0.02 | 14,030 | 40,197 | 41.15 s | 6.19 s | 26,481,092 bytes |
+
+Every streamed TSV row count matched the stored count, both runs were complete, and page timer ticks continued during computation. Origin estimates were 75,592,649 and 112,419,706 bytes; these are point-in-time origin usage, including possible database free pages after the prior run's deletion, not isolated physical payload sizes. Estimated uncompressed payloads were 93,289,510 and 104,574,736 bytes. Captured application requests showed no POSTs or foreign-origin requests. No raw data or candidate coordinates were exported to the public repository. These are chromosome-only sensitivity trials; the lower-threshold whole genome was not established after the default-density genome remained incomplete.
+
+
+## Final real shared-control contrast trial
+
+A separate chromosome-21 run used six averaged strand BigWigs (1,628,648,435 bytes total), the same 2,197,669-byte annotation, 100 kb distance and 0.08 floor. The experiment registry held six biological sample identities: the same two zero-hour controls referenced by both treatment contrasts, plus two treatment samples per condition. Owner-confirmed A/B biological independence was recorded; no matched-series or technical-batch assertion was added. Averaged tracks remained descriptive, with no fitted statistics or pooled significance.
+
+- Both selected contrasts successful; two unused automatic proposals explicitly excluded.
+- **60,981 saved rows**: 30,809 dTAG and 30,172 AGB1; 89 checkpoints.
+- Processing 78.44 s; measured write work 64.95 s; 157,433,690 bytes estimated uncompressed payload and 103,952,137 bytes observed origin use.
+- Direct TSV: **44,986,591 bytes / 60,981 data rows**, 14.26 s; main-page timer continued for 749 ticks during processing.
+- Single-versus-multi dTAG comparison: exact membership / 30,809 rows / all 17 compared scientific fields unchanged (numeric tolerance 1e-12). Both contrasts exported the same control sample identities. No p-values were combined.
+- Captured application requests: no POSTs or foreign origins.
+
+The first two-contrast private harness waited for a manual organize button although multi-contrast selection had already opened experiment review. That harness was stopped before analysis; it now accepts either supported entry path and applies bounded action waits. The corrected run above passed. Synthetic CI already tests both folder-driven automatic and manual-organize entry paths.
+
+Private full tables, reports and browser profiles remain under the researcher's separate validation workspace; only aggregate performance and parity findings are public. The remaining release action is public production verification after green final-commit checks and merge; the Vercel preview is account-protected and was not workflow-verified.
