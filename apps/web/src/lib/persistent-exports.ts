@@ -4,7 +4,7 @@ import {makeExperimentArtifacts,experimentBedpe,exportChromosomeSizes} from "./e
 import {ResultStore,type SavedRun,type Layer,type StoredFeature} from "./result-store";
 import type {Artifact} from "./streaming-zip";
 const encoder=new TextEncoder();
-async function* text(s:string){yield encoder.encode(s);}
+async function* text(s:string){let at=0;while(at<s.length){let end=Math.min(at+16384,s.length);if(end<s.length&&/[\uD800-\uDBFF]/.test(s[end-1]))end--;yield encoder.encode(s.slice(at,end));at=end;}}
 /** Encoding buffers never exceed 64 KiB, regardless of row or table size. */
 async function* encode(lines:AsyncIterable<string>){let buffer="",first=true;for await(const line of lines){buffer+=(first?"":"\n")+line;first=false;while(buffer.length>=16384){const end=/[\uD800-\uDBFF]/.test(buffer[16383])?16383:16384;yield encoder.encode(buffer.slice(0,end));buffer=buffer.slice(end);}}if(buffer)yield encoder.encode(buffer);}
 const quote=(v:unknown,d:string)=>{const s=String(v??"");return s.includes(d)||/["\r\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s;};
