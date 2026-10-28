@@ -34,6 +34,8 @@ jobs:
         working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # The compatibility test opens the exact released v0.6 store.
       - uses: actions/setup-node@v4
         with:
           node-version: 22

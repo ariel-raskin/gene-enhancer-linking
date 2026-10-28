@@ -1,0 +1,838 @@
+{
+  "baseline": "945f75d60f99e19bcc7aabdf4da6dbb3f7c8ac19",
+  "kind": "synthetic, paired repeats; origin usage is an estimate",
+  "records": [
+    {
+      "variant": "raw",
+      "count": 20000,
+      "repeat": 0,
+      "generated": 20000,
+      "generationMs": 96.00000020861626,
+      "writeWallMs": 10834.5,
+      "saved": {
+        "rows": 20000,
+        "bytes": 39658346,
+        "batches": 43
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 650.6999999880791,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 542.5999999940395,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 415.59999999403954,
+          "total": 20000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 87.10000002384186,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 176.69999998807907,
+          "total": 100
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 643.5,
+          "total": 20000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 1879.5999999940395,
+          "total": 5000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 10479738,
+          "elapsedMs": 1704.5999999940395,
+          "checksum": 929540023,
+          "dataRows": 20000
+        },
+        {
+          "format": "zip",
+          "bytes": 50379942,
+          "elapsedMs": 12253.100000023842,
+          "checksum": 3978861339,
+          "dataRows": null
+        }
+      ],
+      "origin": {
+        "quota": 10754323391,
+        "usage": 16905151,
+        "usageDetails": {
+          "indexedDB": 16905151
+        }
+      },
+      "liveIndexedDbFileLengths": 16905151,
+      "deleteMs": 454.40000000596046,
+      "closedProfileFileLengths": 21895735
+    },
+    {
+      "variant": "actual",
+      "count": 20000,
+      "repeat": 0,
+      "generated": 20000,
+      "generationMs": 17.299999952316284,
+      "writeWallMs": 5960.9000000059605,
+      "saved": {
+        "rows": 20000,
+        "bytes": 39658346,
+        "batches": 43
+      },
+      "profile": {
+        "classTransactions": 1344,
+        "classWriteTransactions": 49,
+        "classReadTransactions": 1295,
+        "packingValidationMs": 88.39999982714653,
+        "calls": 43,
+        "quotaWallMs": 61.400000005960464,
+        "validationSerializationMs": 140,
+        "rowEncodingHashMs": 134.80000001192093,
+        "compressionWallMs": 293.10000002384186,
+        "payloadBytes": 661817,
+        "encodedBytes": 19682046,
+        "peakBuffersEstimate": 1493974,
+        "checkpointHashMs": 81.59999996423721,
+        "transactionCreateMs": 11.199999988079071,
+        "transactions": 43,
+        "checkpointRunReadWaitMs": 75.59999999403954,
+        "featureAdds": 300,
+        "featureEnqueueMs": 7.600000083446503,
+        "projectionEnqueueMs": 985.0999999940395,
+        "attemptedRows": 20000,
+        "rowIndexEntries": 180000,
+        "summaryReads": 120,
+        "queuedRowsAndSummaryWaitMs": 3695.799999922514,
+        "summaryPuts": 120,
+        "metadataEnqueueMs": 25.80000001192093,
+        "commitWaitMs": 271.2999999821186,
+        "commitWallMs": 5783.399999976158,
+        "committedRows": 20000,
+        "generationMs": 25.90000009536743,
+        "rowDrainNestedMs": 3672.2999999821186,
+        "partitionWallMs": 5956.799999982119
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 376.2000000178814,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 278.89999997615814,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 271.59999999403954,
+          "total": 20000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 114.2999999821186,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 230.2000000178814,
+          "total": 100
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 428.09999999403954,
+          "total": 20000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 1443.5999999940395,
+          "total": 5000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 10479738,
+          "elapsedMs": 1621,
+          "checksum": 929540023,
+          "dataRows": 20000
+        },
+        {
+          "format": "zip",
+          "bytes": 50381166,
+          "elapsedMs": 17341.29999998212,
+          "checksum": 3460398967,
+          "dataRows": null
+        }
+      ],
+      "origin": {
+        "quota": 10748833314,
+        "usage": 11415074,
+        "usageDetails": {
+          "indexedDB": 11415074
+        }
+      },
+      "liveIndexedDbFileLengths": 11415074,
+      "deleteMs": 128.2999999821186,
+      "closedProfileFileLengths": 15032359
+    },
+    {
+      "variant": "raw",
+      "count": 20000,
+      "repeat": 1,
+      "generated": 20000,
+      "generationMs": 11.100000143051147,
+      "writeWallMs": 6301.899999976158,
+      "saved": {
+        "rows": 20000,
+        "bytes": 39658346,
+        "batches": 43
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 494,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 376.69999998807907,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 322.90000000596046,
+          "total": 20000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 54,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 133.40000000596046,
+          "total": 100
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 312.7999999821186,
+          "total": 20000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 1613.2000000178814,
+          "total": 5000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 10479738,
+          "elapsedMs": 1248.800000011921,
+          "checksum": 929540023,
+          "dataRows": 20000
+        },
+        {
+          "format": "zip",
+          "bytes": 50379941,
+          "elapsedMs": 8212.699999988079,
+          "checksum": 781283500,
+          "dataRows": null
+        }
+      ],
+      "origin": {
+        "quota": 10758434213,
+        "usage": 21015973,
+        "usageDetails": {
+          "indexedDB": 21015973
+        }
+      },
+      "liveIndexedDbFileLengths": 21015973,
+      "deleteMs": 268.19999998807907,
+      "closedProfileFileLengths": 27802053
+    },
+    {
+      "variant": "actual",
+      "count": 20000,
+      "repeat": 1,
+      "generated": 20000,
+      "generationMs": 15.700000047683716,
+      "writeWallMs": 6848.200000017881,
+      "saved": {
+        "rows": 20000,
+        "bytes": 39658346,
+        "batches": 43
+      },
+      "profile": {
+        "classTransactions": 1344,
+        "classWriteTransactions": 49,
+        "classReadTransactions": 1295,
+        "packingValidationMs": 79.89999997615814,
+        "calls": 43,
+        "quotaWallMs": 37.30000001192093,
+        "validationSerializationMs": 125.09999999403954,
+        "rowEncodingHashMs": 153.80000007152557,
+        "compressionWallMs": 538.3999999463558,
+        "payloadBytes": 661817,
+        "encodedBytes": 19682046,
+        "peakBuffersEstimate": 1493974,
+        "checkpointHashMs": 124.30000004172325,
+        "transactionCreateMs": 29.500000029802322,
+        "transactions": 43,
+        "checkpointRunReadWaitMs": 181.9999998807907,
+        "featureAdds": 300,
+        "featureEnqueueMs": 6,
+        "projectionEnqueueMs": 1020.1000000536442,
+        "attemptedRows": 20000,
+        "rowIndexEntries": 180000,
+        "summaryReads": 120,
+        "queuedRowsAndSummaryWaitMs": 4227.700000017881,
+        "summaryPuts": 120,
+        "metadataEnqueueMs": 65.90000000596046,
+        "commitWaitMs": 193.89999982714653,
+        "commitWallMs": 6704.09999987483,
+        "committedRows": 20000,
+        "generationMs": 27.30000016093254,
+        "rowDrainNestedMs": 4147.500000029802,
+        "partitionWallMs": 6845.699999988079
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 370.69999998807907,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 261.59999999403954,
+          "total": 20000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 272.80000001192093,
+          "total": 20000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 61.30000001192093,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 184.5,
+          "total": 100
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 302.59999999403954,
+          "total": 20000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 1377.0999999940395,
+          "total": 5000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 10479738,
+          "elapsedMs": 1115.5,
+          "checksum": 929540023,
+          "dataRows": 20000
+        },
+        {
+          "format": "zip",
+          "bytes": 50381163,
+          "elapsedMs": 8142.0999999940395,
+          "checksum": 2816788112,
+          "dataRows": null
+        }
+      ],
+      "origin": {
+        "quota": 10758587236,
+        "usage": 21168996,
+        "usageDetails": {
+          "indexedDB": 21168996
+        }
+      },
+      "liveIndexedDbFileLengths": 21168996,
+      "deleteMs": 171.5,
+      "closedProfileFileLengths": 15033266
+    },
+    {
+      "variant": "raw",
+      "count": 240000,
+      "repeat": 0,
+      "generated": 240000,
+      "generationMs": 265.4000004827976,
+      "writeWallMs": 163186.70000001788,
+      "saved": {
+        "rows": 240000,
+        "bytes": 475622242,
+        "batches": 485
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 6372.0999999940395,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 4189,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 3876.7999999821186,
+          "total": 240000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 149.90000000596046,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 283,
+          "total": 1200
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 4230.0999999940395,
+          "total": 240000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 21801.899999976158,
+          "total": 60000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 126876738,
+          "elapsedMs": 25172.79999998212,
+          "checksum": 3511769327,
+          "dataRows": 240000
+        }
+      ],
+      "origin": {
+        "quota": 10942869442,
+        "usage": 205451202,
+        "usageDetails": {
+          "indexedDB": 205451202
+        }
+      },
+      "liveIndexedDbFileLengths": 205451202,
+      "deleteMs": 12688.800000011921,
+      "closedProfileFileLengths": 245845690
+    },
+    {
+      "variant": "actual",
+      "count": 240000,
+      "repeat": 0,
+      "generated": 240000,
+      "generationMs": 196.700000166893,
+      "writeWallMs": 94085.19999998808,
+      "saved": {
+        "rows": 240000,
+        "bytes": 475622242,
+        "batches": 485
+      },
+      "profile": {
+        "classTransactions": 1495,
+        "classWriteTransactions": 519,
+        "classReadTransactions": 976,
+        "packingValidationMs": 1089.5999993681908,
+        "calls": 485,
+        "quotaWallMs": 613.000000089407,
+        "validationSerializationMs": 1438.599999845028,
+        "rowEncodingHashMs": 1774.7999999523163,
+        "compressionWallMs": 3637.7000001966953,
+        "payloadBytes": 7960468,
+        "encodedBytes": 237030490,
+        "peakBuffersEstimate": 1503080,
+        "checkpointHashMs": 903.1000001430511,
+        "transactionCreateMs": 111.19999995827675,
+        "transactions": 485,
+        "checkpointRunReadWaitMs": 973.8999996781349,
+        "featureAdds": 1400,
+        "featureEnqueueMs": 34.999999940395355,
+        "projectionEnqueueMs": 11694.799999892712,
+        "attemptedRows": 240000,
+        "rowIndexEntries": 2160000,
+        "summaryReads": 1440,
+        "queuedRowsAndSummaryWaitMs": 68021.70000043511,
+        "summaryPuts": 1440,
+        "metadataEnqueueMs": 346.7999997437,
+        "commitWaitMs": 2851.099999964237,
+        "commitWallMs": 92404.39999985695,
+        "committedRows": 240000,
+        "generationMs": 298.5000002980232,
+        "rowDrainNestedMs": 67484.40000018477,
+        "partitionWallMs": 94076.80000001192
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 3823.5999999940395,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 7454.399999976158,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 6486.5,
+          "total": 240000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 86.30000001192093,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 198.2999999821186,
+          "total": 1200
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 1802,
+          "total": 240000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 15521,
+          "total": 60000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 126876738,
+          "elapsedMs": 14253.300000011921,
+          "checksum": 3511769327,
+          "dataRows": 240000
+        }
+      ],
+      "origin": {
+        "quota": 10853135079,
+        "usage": 115716839,
+        "usageDetails": {
+          "indexedDB": 115716839
+        }
+      },
+      "liveIndexedDbFileLengths": 115716839,
+      "deleteMs": 7249.5999999940395,
+      "closedProfileFileLengths": 173836722
+    },
+    {
+      "variant": "raw",
+      "count": 240000,
+      "repeat": 1,
+      "generated": 240000,
+      "generationMs": 368.00000005960464,
+      "writeWallMs": 198359.40000000596,
+      "saved": {
+        "rows": 240000,
+        "bytes": 475622242,
+        "batches": 485
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 4515.199999988079,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 4134.4000000059605,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 3652.7999999821186,
+          "total": 240000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 129.30000001192093,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 256.09999999403954,
+          "total": 1200
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 3405.0999999940395,
+          "total": 240000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 22575.09999999404,
+          "total": 60000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 126876738,
+          "elapsedMs": 16649.40000000596,
+          "checksum": 3511769327,
+          "dataRows": 240000
+        }
+      ],
+      "origin": {
+        "quota": 10954461109,
+        "usage": 217042869,
+        "usageDetails": {
+          "indexedDB": 217042869
+        }
+      },
+      "liveIndexedDbFileLengths": 219275905,
+      "deleteMs": 16682.19999998808,
+      "closedProfileFileLengths": 262067002
+    },
+    {
+      "variant": "actual",
+      "count": 240000,
+      "repeat": 1,
+      "generated": 240000,
+      "generationMs": 447.0000002682209,
+      "writeWallMs": 114508,
+      "saved": {
+        "rows": 240000,
+        "bytes": 475622242,
+        "batches": 485
+      },
+      "profile": {
+        "classTransactions": 1495,
+        "classWriteTransactions": 519,
+        "classReadTransactions": 976,
+        "packingValidationMs": 1506.2999993562698,
+        "calls": 485,
+        "quotaWallMs": 1015.2999999821186,
+        "validationSerializationMs": 1907.1000001430511,
+        "rowEncodingHashMs": 2900.099999964237,
+        "compressionWallMs": 7671.300000220537,
+        "payloadBytes": 7960468,
+        "encodedBytes": 237030490,
+        "peakBuffersEstimate": 1503080,
+        "checkpointHashMs": 1250.6999993920326,
+        "transactionCreateMs": 375.0000003874302,
+        "transactions": 485,
+        "checkpointRunReadWaitMs": 2265.0999998152256,
+        "featureAdds": 1400,
+        "featureEnqueueMs": 25.30000016093254,
+        "projectionEnqueueMs": 13290.300000488758,
+        "attemptedRows": 240000,
+        "rowIndexEntries": 2160000,
+        "summaryReads": 1440,
+        "queuedRowsAndSummaryWaitMs": 77371.79999917746,
+        "summaryPuts": 1440,
+        "metadataEnqueueMs": 1035.2000002264977,
+        "commitWaitMs": 2745.2000002563,
+        "commitWallMs": 111855.50000023842,
+        "committedRows": 240000,
+        "generationMs": 556.8000002205372,
+        "rowDrainNestedMs": 75815.39999940991,
+        "partitionWallMs": 114504.10000002384
+      },
+      "queries": [
+        {
+          "query": {},
+          "ms": 3515.5999999940395,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 2855,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 2973.4000000059605,
+          "total": 240000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 104.5,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 226.2999999821186,
+          "total": 1200
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 2561.100000023842,
+          "total": 240000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 22336.79999998212,
+          "total": 60000
+        }
+      ],
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 126876738,
+          "elapsedMs": 16561,
+          "checksum": 3511769327,
+          "dataRows": 240000
+        }
+      ],
+      "origin": {
+        "quota": 10859690463,
+        "usage": 122272223,
+        "usageDetails": {
+          "indexedDB": 122272223
+        }
+      },
+      "liveIndexedDbFileLengths": 122272223,
+      "deleteMs": 11930,
+      "closedProfileFileLengths": 170534804
+    }
+  ]
+}

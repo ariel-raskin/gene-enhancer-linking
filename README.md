@@ -76,6 +76,12 @@ Experiment runs now write candidate batches to browser-local IndexedDB and query
 
 Read [v0.6 architecture and limits](docs/persistent-results-v0.6.md) and [validation](docs/persistent-results-v0.6-validation.md). Browser storage overhead and host resource pressure still limit dense workloads; chromosome/genome scopes do not promise unlimited capacity. The legacy simple view retains its original in-memory limits.
 
+### IndexedDB throughput (v0.6.1)
+
+New runs use compact internal database keys while retaining the same scientific records, public identifiers, indexed queries, strict atomic commits and export formats. Existing v0.6 runs remain explorable and exportable through their original layout; their numerical data are read-only. No saved run is automatically reset or deleted. Close other GEL tabs if a schema upgrade is blocked.
+
+The paired 240,000-row synthetic benchmark measured about 42% less persistence time and 44% less estimated origin storage. This is a storage improvement, not evidence of greater biological accuracy or unlimited browser capacity. See the [performance and integrity report](docs/indexeddb-throughput-v0.6.1.md) for measurements, real-data validation status, legacy compatibility and reproducible benchmark commands. Scientific thresholds and safety limits are unchanged.
+
 ## Development
 
 ```bash
