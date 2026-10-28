@@ -35,7 +35,7 @@ flowchart LR
 
 A core cannot finalize a long peak before subsequent cores are examined. Two chromosome passes still precede pairing. Writes begin after complete chromosome measurements, then commit bounded batches before the next chromosome. This is not per-core resume.
 
-The 200,000 peak-summary guard now applies per chromosome in the persistent path. Annotation feature, indexed-query bytes, input file, chunk/concurrency, 100,000-pass and 24-contrast guards remain. Legacy interval manifests still run the bounded regional engine before persistence. No guard was removed from the collecting/reference paths.
+The 200,000 peak-summary guard now applies per chromosome in the persistent path. Annotation feature, indexed-query bytes, input file, chunk/concurrency, 100,000-pass and 24-contrast guards remain. Legacy interval manifests retain the original bounded regional signal/feature calculations and now yield pairs to the same storage sink. The collecting reference/simple view retains its original result guards. This avoids changing historical regional boundary behavior. No guard was removed from the collecting/reference paths.
 
 ## Architecture choice
 

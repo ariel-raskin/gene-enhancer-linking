@@ -97,12 +97,10 @@ export async function executeAnalysis(req: AnalysisRequest, report: (message: st
           "No eRNA-diff p-values are inferred for additional filtered BED features without a matched differential result."], elapsedMs: Math.round(performance.now() - started) } };
     } else {
       report("Querying local indexed BigWig blocks in the worker.");
-      result = req.request.genomicScope ? await runChunkedBigWigAnalysis(req.request, report, signal, chunkCache, sink) : await runBigWigAnalysis(req.request, (message) => report(message), cache);
+      result = req.request.genomicScope ? await runChunkedBigWigAnalysis(req.request, report, signal, chunkCache, sink) : await runBigWigAnalysis(req.request, (message) => report(message), cache, sink);
       result.validation.elapsedMs = Math.round(performance.now() - started);
     }
   if(sink){
-    // Legacy interval runner remains bounded; its completed data are persisted once.
-    if(req.kind==="bigwig"&&!req.request.genomicScope)await sink.partition("legacy-region",{genes:result.genes as Gene[],geneStats:result.geneStats??[],enhancers:result.enhancers as Differential[]},result.links);
     return {genes:[],enhancers:[],geneStats:[],secondaryGeneStats:[],links:[],validation:{...result.validation,...(req.kind!=="bigwig"?{geneRows:result.genes.length,enhancerRows:result.enhancers.length,regionalScope:req.scope}:{}),persisted:true}};
   }
   if (req.scope && req.kind !== "bigwig") {
