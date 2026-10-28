@@ -14,7 +14,9 @@ test("additive schema upgrade preserves v0.6 runs and rolls back a terminated wr
   const row=(Object.values(fixture) as {links?:Record<string,unknown>[]}[]).find(x=>x.links?.length)!.links![0],gene={geneId:row.gene_id,symbol:row.gene_symbol,chrom:row.chrom,start:row.gene_start,end:row.gene_end,strand:row.gene_strand};
   const exp={experimentId:"compatibility",contrasts:[],files:[]},params={},store=await legacy.ResultStore.open(),r=await store.create(exp,params,16*1024**2);
   const values=Array.from({length:20},(_,i)=>({...row,link_id:`legacy${i}`}));const features=(run:string)=>[{run,layer:"primary",contrast:"c",kind:"gene",id:row.gene_id,value:gene,counts:{}}];
-  await store.commit(r.id,"primary","c","f",0,[],features(r.id));await store.commit(r.id,"primary","c","p",0,values);await store.update(r.id,{state:"complete"});const before=await store.get(r.id),expected=(await legacy.queryResults(store.db,{run:r.id,layer:"primary"})).rows.map((v:{row:unknown})=>v.row);store.close();
+  await store.commit(r.id,"primary","c","f",0,[],features(r.id));await store.commit(r.id,"primary","c","p",0,values);await store.update(r.id,{state:"complete"});const before=await store.get(r.id),expected=(await legacy.queryResults(store.db,{run:r.id,layer:"primary"})).rows.map((v:{row:unknown})=>v.row);
+  // An old tab that ignores versionchange must produce an explicit blocked-upgrade error, never a reset.
+  store.db.onversionchange=()=>{};let blocked=false;try{await api.openResults("gel-legacy-compatibility");}catch(e){blocked=String(e).includes("blocked");}store.close();
   const s=new api.ResultStore(await api.openResults("gel-legacy-compatibility"));const unchanged=JSON.stringify(await s.get(r.id))===JSON.stringify(before),loaded=await api.queryResults(s.db,{run:r.id,layer:"primary"});
   const exported=[];for await(const v of s.rows(r.id,"primary"))exported.push(v.row);
   let readOnly=false;try{await s.commit(r.id,"primary","c","new",0,[{...row,link_id:"forbidden"}]);}catch(e){readOnly=String(e).includes("read-only");}
@@ -27,7 +29,7 @@ test("additive schema upgrade preserves v0.6 runs and rolls back a terminated wr
   let restartRejected=false;try{await s.claimFresh(next.id,exp,params,{});}catch{restartRejected=true;}
   await s.update(next.id,{state:"partial",note:"Explicit recovery after terminated writer; no resume."});
   await s.delete(r.id);const retained=(await api.queryResults(s.db,{run:next.id,layer:"primary"})).total;const oldGone=(await api.queryResults(s.db,{run:r.id,layer:"primary"})).total===0;await s.delete(next.id);s.close();
-  return {unchanged,readOnly,checkpointRolledBack:interruptedMarker===undefined,schema:afterCrash.schema,oldRows:loaded.rows.map((v:{row:unknown})=>v.row),expected,exported,afterRows:afterCrash.rows,indexRows:q.total,retained,oldGone,restartRejected};
+  return {unchanged,readOnly,blocked,checkpointRolledBack:interruptedMarker===undefined,schema:afterCrash.schema,oldRows:loaded.rows.map((v:{row:unknown})=>v.row),expected,exported,afterRows:afterCrash.rows,indexRows:q.total,retained,oldGone,restartRejected};
  },{old,current,fixture});
- expect(result.unchanged&&result.readOnly&&result.oldGone&&result.restartRejected&&result.checkpointRolledBack).toBe(true);expect(result.schema).toBe(2);expect(result.oldRows).toEqual(result.expected);const order=(a:unknown,b:unknown)=>String((a as {link_id:string}).link_id).localeCompare(String((b as {link_id:string}).link_id));expect(result.exported.sort(order)).toEqual(result.expected.sort(order));expect(result.afterRows).toBe(20);expect(result.indexRows).toBe(20);expect(result.retained).toBe(20);
+ expect(result.unchanged&&result.readOnly&&result.oldGone&&result.restartRejected&&result.checkpointRolledBack&&result.blocked).toBe(true);expect(result.schema).toBe(2);expect(result.oldRows).toEqual(result.expected);const order=(a:unknown,b:unknown)=>String((a as {link_id:string}).link_id).localeCompare(String((b as {link_id:string}).link_id));expect(result.exported.sort(order)).toEqual(result.expected.sort(order));expect(result.afterRows).toBe(20);expect(result.indexRows).toBe(20);expect(result.retained).toBe(20);
 });

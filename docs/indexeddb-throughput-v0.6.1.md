@@ -88,7 +88,7 @@ New runs receive an internal numeric key from `runKeys` in the same creation tra
 
 Public candidate identifiers and result ordering remain unchanged. Numeric storage ordinals are internal and do not replace source or candidate IDs in exports. Payloads, summaries, uniqueness, checkpoints and counters still commit together. Summary reads are queued together within that transaction; no biological measurements are aggregated differently.
 
-Schema-1 runs are read through their original indexes and remain explorable/exportable. Their numerical records are read-only; explicit deletion or marking interrupted remains available. A native browser test compares their unchanged metadata/rows, creates and deletes a neighboring schema-2 run, and terminates a worker during an active transaction. Pending rows/checkpoint/count changes roll back together. No source-validated resume is implemented. An old open tab may need closing/reloading for the version upgrade; no automatic reset or downgrade is attempted.
+Schema-1 runs are read through their original indexes and remain explorable/exportable. Their numerical records are read-only; explicit deletion or marking interrupted remains available. A native browser test compares their unchanged metadata/rows, checks an explicitly blocked upgrade, creates and deletes a neighboring schema-2 run, and terminates a worker during an active transaction. Pending rows/checkpoint/count changes roll back together. No source-validated resume is implemented. Finish active v0.6 analysis before opening a new version; active workers are not hot-migrated. Close other GEL tabs and reload if an upgrade is blocked. No automatic reset or downgrade is attempted.
 
 ## Profiling contract
 
