@@ -21,7 +21,7 @@ export default function SavedResults({activeRun,revision}:{activeRun?:string|nul
   const timer=setTimeout(()=>{const query:Query={run:selected,layer:filters.layer as Query["layer"],gene:filters.gene.trim()||undefined,enhancer:filters.enhancer||undefined,contrast:filters.contrast||undefined,tier:filters.tier||undefined,chrom:filters.chrom||undefined,start:filters.start?Number(filters.start):undefined,end:filters.end?Number(filters.end):undefined,morphology:filters.morphology||undefined,statistical:filters.statistical,sort:filters.sort as Query["sort"],after:keys.at(-1)};worker.postMessage({action:"query",runId:selected,query});},150);
   worker.onmessage=e=>{if(!active)return;if(e.data.type==="page"){setPage(e.data);setError("");}else if(e.data.error)setError(e.data.error);};worker.onerror=e=>setError(e.message);
   return()=>{active=false;clearTimeout(timer);worker.terminate();};
- },[selected,filters,keys,revision]);
+ },[selected,filters,keys,revision,current?.updated]);
  useEffect(()=>()=>exportWorker.current?.terminate(),[]);
  const change=(patch:Partial<typeof filters>)=>{setFilters(s=>({...s,...patch}));setKeys([undefined]);setPage(null);};
  const remove=async(id?:string)=>{const store=await ResultStore.open();try{if(id)await store.delete(id);else await store.clear();if(!id||id===selected){setSelected("");setPage(null);}await refresh();}catch(e){setError(e instanceof Error?e.message:String(e));}finally{store.close();}};
