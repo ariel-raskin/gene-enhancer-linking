@@ -60,6 +60,7 @@ export class ResultStore {
     if(rows.length>WRITE_BATCH||(features?.length??0)>WRITE_BATCH)throw new Error("Write batch exceeds 1000 records.");
     const serialized=JSON.stringify({rows,features});if(serialized.length*2>4*1024**2)throw new Error("Write batch exceeds 4 MiB estimate; narrow oversized feature identifiers.");
     const rowBytes=new TextEncoder().encode(JSON.stringify(rows));
+    const payloadHash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",rowBytes)),b=>b.toString(16).padStart(2,"0")).join("");
     const codec=typeof CompressionStream!=="undefined"?"gzip":"json";
     const payload=codec==="gzip"?await new Response(new Blob([rowBytes]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer():rowBytes.buffer;
     const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(serialized));const hash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
@@ -80,7 +81,7 @@ export class ResultStore {
         const c=counts.get(row.gene_id)??{};c[row.evidence_tier]=(c[row.evidence_tier]??0)+1;c.total=(c.total??0)+1;counts.set(row.gene_id,c);
       }
       for(const [id,countsAdded] of counts){const key=[run,layer,contrast,"gene",id];const f=await req(fs.get(key)) as StoredFeature|undefined;if(!f)throw new Error(`Missing persisted gene feature: ${id}`);for(const [tier,n] of Object.entries(countsAdded))f.counts[tier]=(f.counts[tier]??0)+n;fs.put(f);}
-      t.objectStore("batches").add({run,layer,contrast,partition,sequence,hash,rows:rows.length,bytes:addedBytes,codec,payload,partitionComplete:sequence===Number.MAX_SAFE_INTEGER});
+      t.objectStore("batches").add({run,layer,contrast,partition,sequence,hash,rows:rows.length,bytes:addedBytes,codec,payload,payloadHash,partitionComplete:sequence===Number.MAX_SAFE_INTEGER});
       t.objectStore("runs").put({...r,rows:r.rows+rows.length,bytes:r.bytes+addedBytes,batches:r.batches+1,writeMs:(r.writeMs??0)+performance.now()-writeStarted,updated:new Date().toISOString()});
       await complete;return true;
     }catch(error){try{t.abort();}catch{}await complete.catch(()=>{});throw error;}
@@ -88,6 +89,7 @@ export class ResultStore {
   sink(run:string,layer:Layer,contrast:string,signal?:AbortSignal,progress?:(message:string)=>void):ResultSink {
     return {partition:async(id,features,rows)=>{
       let sequence=0;const batchRows=(await this.get(run))?.batchRows??DEFAULT_WRITE_BATCH;
+      if(!Number.isInteger(batchRows)||batchRows<100||batchRows>WRITE_BATCH)throw new Error("Saved write-batch configuration is invalid.");
       if(features.chromosomeSizes){const r=await this.get(run);if(!r)throw new Error("Run deleted before chromosome persistence.");const all=(r.resources.savedChromosomeSizes??{}) as Record<string,Record<string,number>>,key=JSON.stringify([layer,contrast]);await this.update(run,{resources:{savedChromosomeSizes:{...all,[key]:{...all[key],...features.chromosomeSizes}}}});}
       const check=()=>{if(signal?.aborted)throw new DOMException("Cancelled; committed batches retained.","AbortError");};
       const featureRows:StoredFeature[]=[];
@@ -175,8 +177,11 @@ async function hydrate(db:IDBDatabase,values:IndexedRow[]):Promise<StoredRow[]>{
  return result;
 }
 
-async function decodeBatch(batch:{codec:string;payload:ArrayBuffer;rows:number}):Promise<Link[]>{
- const raw=batch.codec==="gzip"?await new Response(new Blob([batch.payload]).stream().pipeThrough(new DecompressionStream("gzip"))).text():new TextDecoder().decode(batch.payload);
+async function decodeBatch(batch:{codec:string;payload:ArrayBuffer;rows:number;payloadHash?:string}):Promise<Link[]>{
+ const stream=batch.codec==="gzip"?new Blob([batch.payload]).stream().pipeThrough(new DecompressionStream("gzip")):new Blob([batch.payload]).stream();
+ const reader=stream.getReader(),decoder=new TextDecoder();let raw="",bytes=0;
+ try{while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.length;raw+=decoder.decode(part.value,{stream:true});if(bytes>8*1024**2||raw.length*2>4*1024**2)throw new Error("Decoded result batch exceeds its validated limit.");}raw+=decoder.decode();}catch(error){await reader.cancel(error).catch(()=>{});throw error;}finally{reader.releaseLock();}
  if(raw.length*2>4*1024**2)throw new Error("Decoded result batch exceeds its validated limit.");
+ if(batch.payloadHash){const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(raw))),b=>b.toString(16).padStart(2,"0")).join("");if(hash!==batch.payloadHash)throw new Error("Persisted scientific payload checksum mismatch.");}
  const rows:Link[]=JSON.parse(raw);if(rows.length!==batch.rows||rows.length>WRITE_BATCH)throw new Error("Persisted batch row count mismatch.");return rows;
 }

@@ -48,7 +48,7 @@ Database `gel-results-v1`, schema 1:
 - `runs`: frozen manifest, thresholds, timestamps, states, outcomes and counters; no uploaded File objects.
 - `features`: exact gene/enhancer/promoter features, gene responses and tier counters; includes zero-candidate genes.
 - `rows`: compact candidate projections and genomic, distance, magnitude, gene ID, symbol, enhancer, chromosome, contrast and tier indexes.
-- `batches`: checkpoint `(run, layer, contrast, partition, sequence)`, SHA-256 identity and compressed scientific rows. Native gzip streams are used where present; JSON is the fallback.
+- `batches`: checkpoint `(run, layer, contrast, partition, sequence)`, SHA-256 checkpoint identity and compressed scientific rows with a separate payload checksum verified on read. Decoding is incremental and rejects oversized batches before accumulating an unbounded string. Native gzip streams are used where present; JSON is the fallback.
 
 One strict-durability transaction commits checkpoint, rows, feature counters and run counters. Identical retries are no-ops; changed content at an existing checkpoint is rejected. A duplicate candidate in another batch aborts the transaction. Features precede their rows; an interruption can leave explicit partial features. A separate terminal partition marker is written only after every feature/row batch commits; its absence denotes an incomplete partition. These markers do not enable resume.
 
