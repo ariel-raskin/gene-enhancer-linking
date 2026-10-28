@@ -11,7 +11,7 @@ export async function streamZip(artifacts:AsyncIterable<Artifact>,sink:ByteSink,
   try{
     for await(const file of artifacts){
       const name=encoder.encode(file.name);if(name.length>65535||central.length>=4096)throw new Error("ZIP entry metadata budget exceeded.");
-      const start=offset,h=record(30);h.u32(0,0x04034b50);h.u16(4,45);h.u16(6,0x808);h.u32(18,0xffffffff);h.u32(22,0xffffffff);h.u16(26,name.length);h.u16(28,20);
+      const start=offset,h=record(30);h.u32(0,0x04034b50);h.u16(4,45);h.u16(6,0x808);h.u16(12,0x21);h.u32(18,0xffffffff);h.u32(22,0xffffffff);h.u16(26,name.length);h.u16(28,20);
       const extra=record(20);extra.u16(0,1);extra.u16(2,16);
       await write(h.bytes);await write(name);await write(extra.bytes);
       let crc=0xffffffff,size=0;
@@ -20,7 +20,7 @@ export async function streamZip(artifacts:AsyncIterable<Artifact>,sink:ByteSink,
       central.push({name,offset:start,size,crc});progress(offset,file.name);
     }
     const cdStart=offset;
-    for(const e of central){const h=record(46);h.u32(0,0x02014b50);h.u16(4,45);h.u16(6,45);h.u16(8,0x808);h.u32(16,e.crc);h.u32(20,0xffffffff);h.u32(24,0xffffffff);h.u16(28,e.name.length);h.u16(30,28);h.u32(42,0xffffffff);const extra=record(28);extra.u16(0,1);extra.u16(2,24);extra.u64(4,e.size);extra.u64(12,e.size);extra.u64(20,e.offset);await write(h.bytes);await write(e.name);await write(extra.bytes);}
+    for(const e of central){const h=record(46);h.u32(0,0x02014b50);h.u16(4,45);h.u16(6,45);h.u16(8,0x808);h.u16(14,0x21);h.u32(16,e.crc);h.u32(20,0xffffffff);h.u32(24,0xffffffff);h.u16(28,e.name.length);h.u16(30,28);h.u32(42,0xffffffff);const extra=record(28);extra.u16(0,1);extra.u16(2,24);extra.u64(4,e.size);extra.u64(12,e.size);extra.u64(20,e.offset);await write(h.bytes);await write(e.name);await write(extra.bytes);}
     const cdSize=offset-cdStart,zip64Start=offset,end=record(56);end.u32(0,0x06064b50);end.u64(4,44);end.u16(12,45);end.u16(14,45);end.u64(24,central.length);end.u64(32,central.length);end.u64(40,cdSize);end.u64(48,cdStart);await write(end.bytes);
     const locator=record(20);locator.u32(0,0x07064b50);locator.u64(8,zip64Start);locator.u32(16,1);await write(locator.bytes);
     const classic=record(22);classic.u32(0,0x06054b50);classic.u16(8,0xffff);classic.u16(10,0xffff);classic.u32(12,0xffffffff);classic.u32(16,0xffffffff);await write(classic.bytes);await sink.close();return offset;
