@@ -1,0 +1,248 @@
+{
+  "baseline": "945f75d60f99e19bcc7aabdf4da6dbb3f7c8ac19",
+  "kind": "synthetic, one paired Linux repeat; separate hardware from Windows medians",
+  "environment": {
+    "os": "RHEL 9.6",
+    "browser": "Chromium 156.0.8078.4",
+    "allocationCpus": 2,
+    "allocationMemoryGiB": 16,
+    "profileFilesystem": "node-local SSD",
+    "jobId": 83064,
+    "jobState": "COMPLETED",
+    "jobElapsed": "00:12:56",
+    "jobMaxRssKiB": 1822748
+  },
+  "records": [
+    {
+      "variant": "raw",
+      "count": 240000,
+      "repeat": 0,
+      "compiledModuleSha256": "7616f744f5abbbf0ae5fefdd95d8893e80f176beae14a0dfcb3c523c8f7a288c",
+      "generated": 240000,
+      "generationMs": 171.8000135421753,
+      "writeWallMs": 192006.4000005722,
+      "saved": {
+        "rows": 240000,
+        "bytes": 475622242,
+        "batches": 485
+      },
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 126876738,
+          "elapsedMs": 15898.79999923706,
+          "checksum": 3511769327,
+          "dataRows": 240000
+        },
+        {
+          "format": "zip",
+          "bytes": 610480747,
+          "elapsedMs": 148414.89999961853,
+          "checksum": 779606118,
+          "dataRows": null,
+          "zipIntegrity": {
+            "entries": 31,
+            "verifiedBytes": 610474273,
+            "masterRows": 240000,
+            "allEntryCrcs": true
+          }
+        }
+      ],
+      "origin": {
+        "quota": 10954153051,
+        "usage": 216734811,
+        "usageDetails": {
+          "indexedDB": 216734811
+        }
+      },
+      "liveIndexedDbFileLengths": 216734811,
+      "closedProfileFileLengths": 251187296,
+      "deleteMs": 10048.10000038147,
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+      "queries": [
+        {
+          "query": {},
+          "ms": 5848.200000762939,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 5191.5,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 5059.900000572205,
+          "total": 240000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 134.79999923706055,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 386.80000019073486,
+          "total": 1200
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 4997.60000038147,
+          "total": 240000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 33779.699999809265,
+          "total": 60000
+        }
+      ]
+    },
+    {
+      "variant": "actual",
+      "count": 240000,
+      "repeat": 0,
+      "compiledModuleSha256": "c1a73ae54acbaabce60eff1a632b63a486b7419f7774727d7b67c61fb43999fc",
+      "generated": 240000,
+      "generationMs": 160.19998741149902,
+      "writeWallMs": 129258.5,
+      "saved": {
+        "rows": 240000,
+        "bytes": 475622242,
+        "batches": 485
+      },
+      "profile": {
+        "classTransactions": 14194,
+        "classWriteTransactions": 519,
+        "classReadTransactions": 13675,
+        "packingValidationMs": 1201.4000301361084,
+        "calls": 485,
+        "quotaWallMs": 31.199999809265137,
+        "validationSerializationMs": 2091.500008583069,
+        "rowEncodingHashMs": 2859.799983024597,
+        "compressionWallMs": 3046.399998664856,
+        "payloadBytes": 7960468,
+        "encodedBytes": 237030490,
+        "peakBuffersEstimate": 1503080,
+        "checkpointHashMs": 1832.300006866455,
+        "transactionCreateMs": 71.70000457763672,
+        "transactions": 485,
+        "checkpointRunReadWaitMs": 578.5999937057495,
+        "featureAdds": 1400,
+        "featureEnqueueMs": 44.000000953674316,
+        "projectionEnqueueMs": 35474.200013160706,
+        "attemptedRows": 240000,
+        "rowIndexEntries": 2160000,
+        "summaryReads": 1440,
+        "queuedRowsAndSummaryWaitMs": 75115.19999217987,
+        "summaryPuts": 1440,
+        "metadataEnqueueMs": 148.49999904632568,
+        "commitWaitMs": 6207.500004768372,
+        "commitWallMs": 127501.5000038147,
+        "committedRows": 240000,
+        "generationMs": 313.59996700286865,
+        "rowDrainNestedMs": 74749.89999961853,
+        "partitionWallMs": 129257
+      },
+      "exports": [
+        {
+          "format": "tsv",
+          "bytes": 126876738,
+          "elapsedMs": 14402.20000076294,
+          "checksum": 3511769327,
+          "dataRows": 240000
+        },
+        {
+          "format": "zip",
+          "bytes": 610481975,
+          "elapsedMs": 128739.5,
+          "checksum": 2715620664,
+          "dataRows": null,
+          "zipIntegrity": {
+            "entries": 31,
+            "verifiedBytes": 610475501,
+            "masterRows": 240000,
+            "allEntryCrcs": true
+          }
+        }
+      ],
+      "origin": {
+        "quota": 10853525540,
+        "usage": 116107300,
+        "usageDetails": {
+          "indexedDB": 116107300
+        }
+      },
+      "liveIndexedDbFileLengths": 116107300,
+      "closedProfileFileLengths": 189688557,
+      "deleteMs": 4658.800000190735,
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+      "queries": [
+        {
+          "query": {},
+          "ms": 3772.199999809265,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "distance"
+          },
+          "ms": 3136.800000190735,
+          "total": 240000
+        },
+        {
+          "query": {
+            "sort": "magnitude"
+          },
+          "ms": 3464.199999809265,
+          "total": 240000
+        },
+        {
+          "query": {
+            "gene": "G50"
+          },
+          "ms": 89.5,
+          "total": 200
+        },
+        {
+          "query": {
+            "enhancer": "chrDense:5000-5050:E0"
+          },
+          "ms": 391.1000003814697,
+          "total": 1200
+        },
+        {
+          "query": {
+            "contrast": "c"
+          },
+          "ms": 3420.699999809265,
+          "total": 240000
+        },
+        {
+          "query": {
+            "chrom": "chrDense",
+            "start": 5000,
+            "end": 10000,
+            "morphology": "catalog_transcribed_region"
+          },
+          "ms": 31348.699999809265,
+          "total": 60000
+        }
+      ]
+    }
+  ]
+}
