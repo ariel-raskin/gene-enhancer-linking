@@ -8,7 +8,7 @@ export const DEFAULT_WRITE_BATCH = 500;
 export const DEFAULT_DISK_BUDGET = 4 * 1024 ** 3;
 export type RunState = "running" | "complete" | "cancelled" | "failed" | "partial";
 export type Layer = "primary" | "track";
-export type SavedRun = { id:string; schema:1; created:string; updated:string; state:RunState; experiment:Experiment; parameters:Parameters; outcomes:Outcome[]; rows:number; bytes:number; batches:number; budget:number; batchRows?:number; writeMs?:number; resources:Record<string,unknown>; note?:string; recoveryReserve?:string };
+export type SavedRun = { id:string; schema:1; created:string; updated:string; state:RunState; experiment:Experiment; parameters:Parameters; outcomes:Outcome[]; rows:number; bytes:number; batches:number; budget:number; executionStarted?:boolean; batchRows?:number; writeMs?:number; resources:Record<string,unknown>; note?:string; recoveryReserve?:string };
 export type StoredRow = { run:string; layer:Layer; contrast:string; id:string; row:Link; symbol:string; gene:string; distanceValue:number; magnitudeValue:number };
 type IndexedRow = Omit<StoredRow,"row"> & {row:Pick<Link,"chrom"|"enhancer_start"|"enhancer_end"|"enhancer_id"|"evidence_tier"|"morphology"|"gene_padj"|"enhancer_padj">;batchKey:IDBValidKey[];position:number};
 export type StoredFeature = {run:string;layer:Layer;contrast:string;kind:"gene"|"enhancer"|"promoter";id:string;value:Gene|Differential;stat?:Differential;counts:Record<string,number>};
@@ -49,8 +49,17 @@ export class ResultStore {
   async create(experiment:Experiment,parameters:Parameters,budget=DEFAULT_DISK_BUDGET,batchRows=DEFAULT_WRITE_BATCH){
     if(!Number.isInteger(batchRows)||batchRows<100||batchRows>WRITE_BATCH)throw new Error("Choose write batches of 100–1000 records.");
     if(!Number.isSafeInteger(budget)||budget<1024)throw new Error("Invalid local result byte budget.");
-    const now=new Date().toISOString();const run:SavedRun={id:crypto.randomUUID(),schema:1,created:now,updated:now,state:"running",experiment,parameters,outcomes:[],rows:0,bytes:0,batches:0,budget,batchRows,resources:{},recoveryReserve:" ".repeat(65536)};
+    const now=new Date().toISOString();const run:SavedRun={id:crypto.randomUUID(),schema:1,created:now,updated:now,state:"running",experiment,parameters,outcomes:[],rows:0,bytes:0,batches:0,budget,batchRows,executionStarted:false,resources:{},recoveryReserve:" ".repeat(65536)};
     const t=this.db.transaction("runs","readwrite");const complete=done(t);if(await req(t.objectStore("runs").count())>=50){t.abort();await complete.catch(()=>{});throw new Error("At most 50 saved runs; export/delete older local results before starting another run.");}t.objectStore("runs").add(run);await complete;return run;
+  }
+  async claimFresh(id:string,experiment:Experiment,parameters:Parameters,files?:Record<string,File>){
+    const t=this.db.transaction("runs","readwrite"),complete=done(t),store=t.objectStore("runs");
+    try{const r=await req(store.get(id)) as SavedRun|undefined;
+      if(!r||r.schema!==STORE_SCHEMA||r.state!=="running"||r.executionStarted!==false||r.rows!==0||r.batches!==0)throw new Error("This run cannot be resumed or started twice. Create a new run with selected source files.");
+      if(JSON.stringify(r.experiment)!==JSON.stringify(experiment)||JSON.stringify(r.parameters)!==JSON.stringify(parameters))throw new Error("Run configuration differs from its frozen manifest; start a new run.");
+      if(files)for(const f of experiment.files){const file=files[f.id];if(!file||file.size!==f.size||file.lastModified!==f.lastModified)throw new Error("Selected file metadata differ from the new run manifest. Reimport and create a new run; these checks do not establish resumable file identity.");}
+      store.put({...r,executionStarted:true,updated:new Date().toISOString()});await complete;
+    }catch(error){try{t.abort();}catch{}await complete.catch(()=>{});throw error;}
   }
   async update(id:string,patch:Partial<Pick<SavedRun,"state"|"outcomes"|"resources"|"note">>){
     const t=this.db.transaction("runs","readwrite"),complete=done(t),s=t.objectStore("runs"),r=await req(s.get(id)) as SavedRun|undefined;
@@ -108,31 +117,40 @@ export class ResultStore {
       return total;
     }};
   }
+  async assertSnapshot(snapshot:SavedRun){const live=await this.get(snapshot.id);if(!live||live.updated!==snapshot.updated||live.rows!==snapshot.rows||live.state!==snapshot.state)throw new Error("Saved run was deleted or changed during export; destination not finalized.");}
   async delete(id:string){
     // Range deletion is atomic and does not materialize the saved rows.
     const names=["runs","rows","features","batches"],t=this.db.transaction(names,"readwrite"),complete=done(t);
     t.objectStore("runs").delete(id);for(const name of names.slice(1))t.objectStore(name).delete(IDBKeyRange.bound([id],[id,[]]));await complete;
   }
   async clear(){const t=this.db.transaction(["runs","rows","features","batches"],"readwrite"),complete=done(t);for(const n of t.objectStoreNames)t.objectStore(n).clear();await complete;}
-  async *features(run:string,layer:Layer,kind:StoredFeature["kind"],contrast?:string){
+  async *features(run:string,layer:Layer,kind:StoredFeature["kind"],contrast?:string,stable=false){
+    const frozen=stable?await this.get(run):undefined;if(stable&&(!frozen||frozen.state==="running"))throw new Error("Export requires a stable saved run.");
     const prefix=[run,layer,kind,...contrast?[contrast]:[]];let after:IDBValidKey|undefined;
-    while(true){const t=this.db.transaction("features"),s=t.objectStore("features").index("kind");const range=IDBKeyRange.bound(after??prefix,[...prefix,[]],!!after);const values=await req(s.getAll(range,WRITE_BATCH)) as StoredFeature[];if(!values.length)return;for(const f of values)yield f;const f=values.at(-1)!;after=[f.run,f.layer,f.kind,f.contrast,f.id];}
+    while(true){if(frozen)await this.assertSnapshot(frozen);const t=this.db.transaction("features"),s=t.objectStore("features").index("kind");const range=IDBKeyRange.bound(after??prefix,[...prefix,[]],!!after);const values=await req(s.getAll(range,WRITE_BATCH)) as StoredFeature[];if(!values.length)return;for(const f of values)yield f;const f=values.at(-1)!;after=[f.run,f.layer,f.kind,f.contrast,f.id];}
   }
   async *rows(run:string,layer:Layer,contrast?:string){
+    const frozen=await this.get(run);if(!frozen||frozen.state==="running")throw new Error("Export requires a stable saved run.");
+    const countTx=this.db.transaction("rows"),countIndex=countTx.objectStore("rows").index(contrast?"contrast":"order"),countPrefix=[run,layer,...contrast?[contrast]:[]];const expected=await req(countIndex.count(IDBKeyRange.bound(countPrefix,[...countPrefix,[]])));let emitted=0;
     // Sequential payload traversal avoids re-decoding a gene batch for every enhancer coordinate.
     const prefix=[run,layer,...contrast?[contrast]:[]];let after:IDBValidKey|undefined;
-    while(true){const t=this.db.transaction("batches"),s=contrast?t.objectStore("batches"):t.objectStore("batches").index("export");
+    while(true){await this.assertSnapshot(frozen);const t=this.db.transaction("batches"),s=contrast?t.objectStore("batches"):t.objectStore("batches").index("export");
       const range=IDBKeyRange.bound(after??prefix,[...prefix,[]],!!after);
       // One batch at a time: no page of hundreds of compressed payloads is retained.
-      const values=await req(s.getAll(range,1));if(!values.length)return;const b=values[0];
-      if(b.rows){const rows=await decodeBatch(b);for(const row of rows)yield {run,layer,contrast:b.contrast,id:row.link_id,row,gene:row.gene_id.toUpperCase(),symbol:row.gene_symbol.toUpperCase(),distanceValue:row.distance_bp,magnitudeValue:row.magnitude_gap_log2fc??Number.MAX_VALUE} satisfies StoredRow;}
+      const values=await req(s.getAll(range,1));if(!values.length){if(emitted!==expected)throw new Error("Saved row/batch count mismatch; export aborted.");return;}const b=values[0];
+      if(b.rows){const rows=await decodeBatch(b);for(const row of rows){emitted++;yield {run,layer,contrast:b.contrast,id:row.link_id,row,gene:row.gene_id.toUpperCase(),symbol:row.gene_symbol.toUpperCase(),distanceValue:row.distance_bp,magnitudeValue:row.magnitude_gap_log2fc??Number.MAX_VALUE} satisfies StoredRow;}}
       after=contrast?[run,layer,b.contrast,b.partition,b.sequence]:[run,layer,b.partition,b.contrast,b.sequence];
     }
   }
 }
-export type Query = {run:string;layer:Layer;gene?:string;enhancer?:string;chrom?:string;start?:number;end?:number;contrast?:string;tier?:string;morphology?:string;statistical?:boolean;sort?:"order"|"distance"|"magnitude";after?:IDBValidKey;limit?:number};
+export type Query = {run:string;layer:Layer;gene?:string;enhancer?:string;chrom?:string;start?:number;end?:number;contrast?:string;contrastIds?:string[];tier?:string;morphology?:string;statistical?:boolean;sort?:"order"|"distance"|"magnitude";after?:IDBValidKey;limit?:number};
 export function rowKey(v:Pick<IndexedRow,"row"|"contrast"|"id"|"distanceValue"|"magnitudeValue">,sort:Query["sort"]="order"):IDBValidKey {return [...sort==="distance"?[v.distanceValue]:sort==="magnitude"?[v.magnitudeValue]:[],v.row.chrom,v.row.enhancer_start,v.contrast,v.id];}
-export async function queryResults(db:IDBDatabase,q:Query){
+export async function queryResults(db:IDBDatabase,q:Query):Promise<{rows:StoredRow[];total:number}>{
+  if(q.contrastIds){
+    const ids=[...new Set(q.contrastIds)];if(ids.length>24)throw new Error("At most 24 contrast filters per query.");
+    if(!ids.length||(q.contrast&&!ids.includes(q.contrast)))return {rows:[],total:0};
+    if(!q.contrast){let total=0;const rows:StoredRow[]=[];const limit=Math.min(100,Math.max(1,q.limit??100));for(const contrast of ids){const part=await queryResults(db,{...q,contrast,contrastIds:undefined});total+=part.total;for(const v of part.rows){const key=rowKey(v,q.sort);let at=0;while(at<rows.length&&indexedDB.cmp(rowKey(rows[at],q.sort),key)<0)at++;if(at<limit){rows.splice(at,0,v);if(rows.length>limit)rows.pop();}}}return {rows,total};}
+  }
   if([q.start,q.end].some(v=>v!==undefined&&(!Number.isSafeInteger(v)||v<0))||(q.start!==undefined&&q.end!==undefined&&q.end<=q.start))throw new Error("Coordinate filters require nonnegative integer start and exclusive end greater than start.");
   const limit=Math.min(100,Math.max(1,q.limit??100)),prefix:IDBValidKey[]=[q.run,q.layer];
   const filtered=!!(q.gene||q.enhancer||q.chrom||q.contrast||q.tier||q.morphology||q.statistical||q.start!==undefined||q.end!==undefined);

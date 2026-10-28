@@ -60,7 +60,7 @@ The configurable budget limits estimated uncompressed payload, not physical disk
 
 Run states: `running`, `complete`, `cancelled`, `failed`, `partial`. Completion requires finished scanning, all awaited commits and contrast validation. Failed/cancelled comparisons retain committed records with explicit status. Mixed numerical success/failure is partial. Incomplete/excluded comparisons remain in reports. Browser/worker termination can leave `running`; researchers can explicitly mark an interrupted run partial after checking that no other tab is executing it. A small metadata reserve is released at termination to help record failure, without promising a write can succeed on a full device.
 
-Quota failures, conflicting checkpoints, corrupt/missing payloads and worker failures are visible. No silent truncation occurs. Deleting a run makes subsequent writes fail. Cross-tab job coordination is not implemented.
+Quota failures, conflicting checkpoints, corrupt/missing payloads and worker failures are visible. Exports check an immutable source snapshot and indexed row counts; deleting/changing the run aborts rather than finalizing a short file. No silent truncation occurs. Deleting a run makes subsequent writes fail. Cross-tab job coordination is not implemented.
 
 ## Indexed exploration
 
@@ -84,7 +84,7 @@ No analysis backend, upload relay, analytics or external error reporting was add
 
 Reopen after reload, delete one run, clear results, and request storage retention through the workspace. Retention is not permanence: [quotas and eviction vary by browser](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria). Export important work.
 
-Safe source-validated resume is **not implemented**. Atomic checkpoints support integrity and interruption inspection, not reuse with replaced files. Restart with source files as a new run. Future resume must validate strong file identity, settings, annotation, contrasts and schema.
+Safe source-validated resume is **not implemented**. Workers atomically claim a fresh, empty run with matching frozen configuration; a claimed/incompatible run cannot restart, even if it has zero rows. Initial size/mtime checks are consistency checks, not strong resumable file identity. Atomic checkpoints support integrity and interruption inspection, not reuse with replaced files. Restart with source files as a new run. Future resume must validate strong file identity, settings, annotation, contrasts and schema.
 
 ## Validation entry points
 
