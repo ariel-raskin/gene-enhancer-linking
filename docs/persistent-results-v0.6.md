@@ -50,7 +50,7 @@ Database `gel-results-v1`, schema 1:
 - `rows`: compact candidate projections and genomic, distance, magnitude, gene ID, symbol, enhancer, chromosome, contrast and tier indexes.
 - `batches`: checkpoint `(run, layer, contrast, partition, sequence)`, SHA-256 identity and compressed scientific rows. Native gzip streams are used where present; JSON is the fallback.
 
-One strict-durability transaction commits checkpoint, rows, feature counters and run counters. Identical retries are no-ops; changed content at an existing checkpoint is rejected. A duplicate candidate in another batch aborts the transaction. Features precede their rows; an interruption can leave explicit partial features.
+One strict-durability transaction commits checkpoint, rows, feature counters and run counters. Identical retries are no-ops; changed content at an existing checkpoint is rejected. A duplicate candidate in another batch aborts the transaction. Features precede their rows; an interruption can leave explicit partial features. A separate terminal partition marker is written only after every feature/row batch commits; its absence denotes an incomplete partition. These markers do not enable resume.
 
 Write batches: configurable 100–1,000 records (default 500) and a 4 MiB decoded-text estimate. At most eight decoded batches / 8 MiB estimated UTF-16 are cached per connection, plus the current batch of up to 1,000 rows or 100-row view. These estimates exclude object/native overhead. Awaited commits provide backpressure.
 

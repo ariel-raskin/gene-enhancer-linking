@@ -80,7 +80,7 @@ export class ResultStore {
         const c=counts.get(row.gene_id)??{};c[row.evidence_tier]=(c[row.evidence_tier]??0)+1;c.total=(c.total??0)+1;counts.set(row.gene_id,c);
       }
       for(const [id,countsAdded] of counts){const key=[run,layer,contrast,"gene",id];const f=await req(fs.get(key)) as StoredFeature|undefined;if(!f)throw new Error(`Missing persisted gene feature: ${id}`);for(const [tier,n] of Object.entries(countsAdded))f.counts[tier]=(f.counts[tier]??0)+n;fs.put(f);}
-      t.objectStore("batches").add({run,layer,contrast,partition,sequence,hash,rows:rows.length,bytes:addedBytes,codec,payload});
+      t.objectStore("batches").add({run,layer,contrast,partition,sequence,hash,rows:rows.length,bytes:addedBytes,codec,payload,partitionComplete:sequence===Number.MAX_SAFE_INTEGER});
       t.objectStore("runs").put({...r,rows:r.rows+rows.length,bytes:r.bytes+addedBytes,batches:r.batches+1,writeMs:(r.writeMs??0)+performance.now()-writeStarted,updated:new Date().toISOString()});
       await complete;return true;
     }catch(error){try{t.abort();}catch{}await complete.catch(()=>{});throw error;}
@@ -98,6 +98,7 @@ export class ResultStore {
       let batch:Link[]=[],total=0;
       for(const row of rows){check();batch.push(row);total++;if(batch.length===batchRows){await this.commit(run,layer,contrast,id,sequence++,batch);if(sequence%16===0)progress?.(`${id} · persisted ${total.toLocaleString()} candidate rows`);batch=[];}}
       if(batch.length){check();await this.commit(run,layer,contrast,id,sequence++,batch);}
+      check();await this.commit(run,layer,contrast,id,Number.MAX_SAFE_INTEGER,[],[]);
       return total;
     }};
   }
