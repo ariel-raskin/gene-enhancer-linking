@@ -40,6 +40,10 @@ export async function openResults() {
     r.onblocked=()=>{clearTimeout(timer);if(!settled){settled=true;reject(new Error("Local result schema upgrade is blocked by another tab. Close other GEL tabs and reload."));}};
   });db.onversionchange=()=>db.close();return db;
 }
+function recordBytes(value:unknown){
+  const inspect=(v:unknown)=>{if(typeof v==="string"&&v.length>65536)throw new Error("A result field exceeds 64 KiB characters. Use compact stable feature identifiers; no rows were truncated.");if(v&&typeof v==="object")for(const x of Object.values(v))inspect(x);};inspect(value);
+  const size=JSON.stringify(value).length*2;if(size>2*1024**2)throw new Error("A result record exceeds the 2 MiB byte budget.");return size;
+}
 export class ResultStore {
   constructor(readonly db:IDBDatabase,readonly durability:IDBTransactionDurability="strict"){}
   static async open(){return new ResultStore(await openResults());}
@@ -71,6 +75,7 @@ export class ResultStore {
     const writeStarted=performance.now();
     if(sequence%16===0&&navigator.storage?.estimate){const e=await navigator.storage.estimate();if(e.quota&&e.usage!==undefined&&e.quota-e.usage<Math.max(256*1024**2,e.quota*0.2))throw new DOMException("Browser origin storage headroom below 20% (at least 256 MiB reserved). Export/delete saved runs or use a smaller scope.","QuotaExceededError");}
     if(rows.length>WRITE_BATCH||(features?.length??0)>WRITE_BATCH)throw new Error("Write batch exceeds 1000 records.");
+    let estimated=128;for(const value of [...rows,...features??[]]){estimated+=recordBytes(value);if(estimated>4*1024**2)throw new Error("Write batch exceeds the pre-serialization byte budget.");}
     const serialized=JSON.stringify({rows,features});if(serialized.length*2>4*1024**2)throw new Error("Write batch exceeds 4 MiB estimate; narrow oversized feature identifiers.");
     const rowBytes=new TextEncoder().encode(JSON.stringify(rows));
     const payloadHash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",rowBytes)),b=>b.toString(16).padStart(2,"0")).join("");
@@ -105,13 +110,14 @@ export class ResultStore {
       if(!Number.isInteger(batchRows)||batchRows<100||batchRows>WRITE_BATCH)throw new Error("Saved write-batch configuration is invalid.");
       if(features.chromosomeSizes){const r=await this.get(run);if(!r)throw new Error("Run deleted before chromosome persistence.");const all=(r.resources.savedChromosomeSizes??{}) as Record<string,Record<string,number>>,key=JSON.stringify([layer,contrast]);await this.update(run,{resources:{savedChromosomeSizes:{...all,[key]:{...all[key],...features.chromosomeSizes}}}});}
       const check=()=>{if(signal?.aborted)throw new DOMException("Cancelled; committed batches retained.","AbortError");};
-      const featureRows:StoredFeature[]=[];
-      const flush=async()=>{if(featureRows.length){check();await this.commit(run,layer,contrast,id,sequence++,[],featureRows.splice(0));if(sequence%16===0)progress?.(`${id} · persisting feature batch ${sequence}`);}};
+      const featureRows:StoredFeature[]=[];let featureBytes=0;
+      const flush=async()=>{if(featureRows.length){check();await this.commit(run,layer,contrast,id,sequence++,[],featureRows.splice(0));featureBytes=0;if(sequence%16===0)progress?.(`${id} · persisting feature batch ${sequence}`);}};
+      const pushFeature=async(f:StoredFeature)=>{const size=recordBytes(f);if(featureRows.length&&featureBytes+size>2*1024**2)await flush();featureRows.push(f);featureBytes+=size;if(featureRows.length===batchRows)await flush();};
       const stats=new Map(features.geneStats.map(s=>[s.featureId,s]));
-      for(const g of features.genes){featureRows.push({run,layer,contrast,kind:"gene",id:g.geneId,value:g,stat:stats.get(g.geneId),counts:{}});if(featureRows.length===batchRows)await flush();}await flush();
-      for(const kind of ["enhancer","promoter"] as const){for(const v of kind==="enhancer"?features.enhancers:features.secondaryGeneStats??[]){featureRows.push({run,layer,contrast,kind,id:v.featureId,value:v,counts:{}});if(featureRows.length===batchRows)await flush();}await flush();}
-      let batch:Link[]=[],total=0;
-      for(const row of rows){check();batch.push(row);total++;if(batch.length===batchRows){await this.commit(run,layer,contrast,id,sequence++,batch);if(sequence%16===0)progress?.(`${id} · persisted ${total.toLocaleString()} candidate rows`);batch=[];}}
+      for(const g of features.genes){await pushFeature({run,layer,contrast,kind:"gene",id:g.geneId,value:g,stat:stats.get(g.geneId),counts:{}});}await flush();
+      for(const kind of ["enhancer","promoter"] as const){for(const v of kind==="enhancer"?features.enhancers:features.secondaryGeneStats??[]){await pushFeature({run,layer,contrast,kind,id:v.featureId,value:v,counts:{}});}await flush();}
+      let batch:Link[]=[],total=0,batchBytes=0;
+      for(const row of rows){check();const size=recordBytes(row);if(batch.length&&batchBytes+size>2*1024**2){await this.commit(run,layer,contrast,id,sequence++,batch);batch=[];batchBytes=0;}batch.push(row);batchBytes+=size;total++;if(batch.length===batchRows){await this.commit(run,layer,contrast,id,sequence++,batch);if(sequence%16===0)progress?.(`${id} · persisted ${total.toLocaleString()} candidate rows`);batch=[];batchBytes=0;}}
       if(batch.length){check();await this.commit(run,layer,contrast,id,sequence++,batch);}
       check();await this.commit(run,layer,contrast,id,Number.MAX_SAFE_INTEGER,[],[]);
       return total;

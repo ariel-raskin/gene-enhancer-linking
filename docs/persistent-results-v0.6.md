@@ -52,7 +52,7 @@ Database `gel-results-v1`, schema 1:
 
 One strict-durability transaction commits checkpoint, rows, feature counters and run counters. Identical retries are no-ops; changed content at an existing checkpoint is rejected. A duplicate candidate in another batch aborts the transaction. Features precede their rows; an interruption can leave explicit partial features. A separate terminal partition marker is written only after every feature/row batch commits; its absence denotes an incomplete partition. These markers do not enable resume.
 
-Write batches: configurable 100–1,000 records (default 500) and a 4 MiB decoded-text estimate. At most eight decoded batches / 8 MiB estimated UTF-16 are cached per connection, plus the current batch of up to 1,000 rows or 100-row view. These estimates exclude object/native overhead. Awaited commits provide backpressure.
+Write batches: configurable 100–1,000 records (default 500), packed to a 2 MiB target before combined serialization, with a 4 MiB hard decoded-text guard. Individual fields over 64 KiB characters and records over 2 MiB are rejected explicitly; no identifier truncation occurs. At most eight decoded batches / 8 MiB estimated UTF-16 are cached per connection, plus the current batch of up to 1,000 rows or 100-row view. These estimates exclude object/native overhead. Awaited commits provide backpressure.
 
 ## Capacity and failure
 
