@@ -22,7 +22,7 @@ scope.onmessage=async(e:MessageEvent<{action:string;runId:string;query?:Query;fi
    let written=0;
    if(e.data.fileKey){try{let found=false;for await(const item of persistentArtifacts(store,run))if(item.name===e.data.fileKey){found=true;for await(const bytes of item.data){await sink.write(bytes);written+=bytes.length;}break;}if(!found)throw new Error("Requested export not found.");await sink.close();}catch(error){await sink.abort(error);throw error;}}
    else written=await streamZip(persistentArtifacts(store,run),sink,(bytes,name)=>scope.postMessage({type:"progress",message:`Exported ${name} · ${(bytes/1024**2).toFixed(1)} MiB`}));
-   scope.postMessage({type:"exported",name:e.data.fileKey??"gel-experiment.zip",bytes:written,strategy:handle?"direct filesystem stream":"bounded whole-Blob fallback (64 MiB)",blob:handle?undefined:new Blob(buffers)});
+   scope.postMessage({type:"exported",name:e.data.fileKey?.split("/").at(-1)??"gel-experiment.zip",bytes:written,strategy:handle?"direct filesystem stream":"bounded whole-Blob fallback (64 MiB)",blob:handle?undefined:new Blob(buffers)});
   }
  }catch(error){scope.postMessage({type:"error",error:error instanceof Error?error.message:String(error)});}finally{store?.close();}
 };

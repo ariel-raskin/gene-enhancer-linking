@@ -33,8 +33,12 @@ export async function openResults() {
     const f=db.createObjectStore("features",{keyPath:["run","layer","contrast","kind","id"]});
     f.createIndex("kind",["run","layer","kind","contrast","id"]);
   };
-  r.onblocked=()=>{ /* another tab's older connection must close before upgrade */ };
-  const db=await req(r);db.onversionchange=()=>db.close();return db;
+  const db=await new Promise<IDBDatabase>((resolve,reject)=>{
+    let settled=false;const timer=setTimeout(()=>{settled=true;reject(new Error("Local storage did not open within 10 seconds. Close other GEL tabs or check browser storage permissions."));},10000);
+    r.onsuccess=()=>{clearTimeout(timer);if(settled)r.result.close();else{settled=true;resolve(r.result);}};
+    r.onerror=()=>{clearTimeout(timer);if(!settled){settled=true;reject(r.error);}};
+    r.onblocked=()=>{clearTimeout(timer);if(!settled){settled=true;reject(new Error("Local result schema upgrade is blocked by another tab. Close other GEL tabs and reload."));}};
+  });db.onversionchange=()=>db.close();return db;
 }
 export class ResultStore {
   constructor(readonly db:IDBDatabase,readonly durability:IDBTransactionDurability="strict"){}
