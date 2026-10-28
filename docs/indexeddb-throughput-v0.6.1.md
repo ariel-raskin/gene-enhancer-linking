@@ -59,6 +59,22 @@ Indexed-query medians (milliseconds, hydrated first 100 rows plus exact count):
 
 These include bounded batch decompression/checksum validation, not just index seeks. Results and counts matched exactly. Distance/magnitude pages were slower in the larger candidate trial; compact keys are not a universal query speedup. Composite residual filters still walk the selected index population and are a remaining latency limitation.
 
+### Complete large-archive cross-platform check
+
+An additional **single paired repeat**, on RHEL 9.6 / Chromium 156 in a two-CPU, 16-GiB allocation with node-local SSD profiles, completed the full 240,000-row baseline and candidate workload, including complete TSV and ZIP exports (job 83064, completed in 12:56; reported MaxRSS 1,822,748 KiB). These are separate hardware observations, not additional repetitions in the Windows medians.
+
+| Operation | Released v0.6 | v0.6.1 |
+|---|---:|---:|
+| Persistence | 192.01 s | 129.26 s |
+| Complete TSV | 15.90 s | 14.40 s |
+| Complete ZIP64 | 148.41 s | 128.74 s |
+| Live IndexedDB file-length sum / origin estimate | 216,734,811 B | 116,107,300 B |
+| Delete | 10.05 s | 4.66 s |
+
+Persistence was 32.7% shorter in this repeat. TSVs were again identical (126,876,738 bytes; 240,000 data rows; FNV-1a 3511769327). ZIPs were **610,480,747 / 610,481,975 bytes**, with all **31 entries** independently checked after close using bounded seeks and streamed CRC/size verification, including the 240,000-row master table. Their differing metadata/timestamps explain the differing archive bytes. Verification time is excluded from export time. Useful query populations and first-page identifiers matched exactly; genomic/morphology residual filtering still took 31–34 s, so indexed storage does not imply instant arbitrary compound filters. The Linux fallback browser build runs successfully but is not an officially supported Playwright RHEL distribution.
+
+The live file-length diagnostic is a sum of filesystem-reported file lengths, not allocated blocks or total physical device writes. Post-deletion lengths were larger because retained pages/journals can outlive logical records. Sanitized repeat records and exact compiled-module fingerprints are in [the large-ZIP measurement file](benchmarks/indexeddb-v061-large-zip.json). The paired Windows records are [separate](benchmarks/indexeddb-v061-synthetic.json).
+
 ## Actual bottleneck and alternatives
 
 Disjoint stage measurements in a 240,000-row baseline trial found approximately 102.8 of 121.0 commit seconds waiting for queued rows and gene-summary requests. The nested last-row drain diagnostic was 102.2 s, showing that most of that interval precedes completion of row/index writes. It must **not** be added again to the parent interval. Synchronous projection/enqueue took about 10.3 s; serialization/encoding/hashing/compression together about 5.1 s. The final transaction-completion wait was about 1.8 s; quota checks about 0.28 s. Browser APIs do not expose the CPU time of each internal secondary-index mutation; index ablation and layout comparisons measure their combined effect.
@@ -94,7 +110,11 @@ Schema-1 runs are read through their original indexes and remain explorable/expo
 
 `resources.storageProfile` records numeric diagnostics only. Major sequential commit stages are quota wait, validation/serialization, row encoding/hash, compression wait, checkpoint hash, transaction creation, checkpoint/run reads, feature enqueue, projection enqueue, queued-row/summary wait, metadata enqueue and final commit wait. Their durations are wall spans, not all CPU time. The row-drain diagnostic is nested. `commitWallMs` is inclusive; `partitionWallMs` is its parent plus generation/packing/metadata work. Do not add parents and children. The legacy `writeMs` field remains for compatibility and can omit the final commit latency.
 
+`generationMs` times advancing the scientific candidate-row iterator. BigWig decoding, peak detection and feature quantification preceding that iterator are outside this metric; full processing elapsed time includes them. No assertion that all scientific computation took only the iterator time is intended.
+
 Counters distinguish attempted from committed rows, commit transactions, class-method read/write transactions, feature adds, summary reads/puts, derived row-index entries and exact compressed/encoded payload bytes. Query/hydration transactions outside the class are not included in class-method counters. The buffer estimate covers current serialization/encoding/payload representations, not JS object, worker or native process peak memory. Checkpoints save recent completed metrics; an interrupted run's diagnostics can lag while its authoritative row counters remain transactional.
+
+Serialization/compression bytes and queued feature/index/summary operations count attempted work, including a retry or an eventual abort. They are not deduplicated on-disk payload or successful physical-write counters. Use authoritative run/index counts and streamed readback to establish saved completeness. The paired no-retry synthetic trials avoid this distinction in their payload-size comparison.
 
 The query worker reports indexed-query and summary wall times separately. Export wall time includes destination-write waits, so those waits must not be added a second time. Neither wall-minus-write-wait nor coarse main-context heap reporting establishes total CPU or native memory use.
 
