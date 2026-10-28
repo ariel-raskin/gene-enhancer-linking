@@ -40,6 +40,7 @@ export default function ExperimentWorkspace({inventory,parameters,onParameters,o
 
   const [savedRun,setSavedRun]=useState<string|null>(null);
   const [diskBudget,setDiskBudget]=useState(4);
+  const [writeBatch,setWriteBatch]=useState(500);
   const [legacyRegional,setLegacyRegional]=useState(false);
   const [genomicScope,setGenomicScope]=useState<GenomicScope>({version:1,mode:"chromosomes",chromosomes:["chr1"],excludedContigs:[]});
 
@@ -90,14 +91,14 @@ export default function ExperimentWorkspace({inventory,parameters,onParameters,o
 
   const inspectScope=()=>{try{const c=contrasts.find((c,i)=>checks[i].bigwigEvidence&&checks[i].status==="pending");if(!c)throw new Error("Confirm one ready BigWig contrast before inspecting its scope.");const req=requestsForContrast(c,experiment,Object.fromEntries(inventory.map(f=>[fileKey(f),f.file])),parameters).find(r=>r.kind==="bigwig");if(!req||req.kind!=="bigwig")return;const w=new Worker(new URL("../workers/scope.worker.ts",import.meta.url),{type:"module"});worker.current=w;setBusy(true);setProgress("Inspecting indexed contig dictionaries and annotation…");w.onmessage=e=>{setBusy(false);setScopeReport(e.data.result?{signature:scopeSignature,result:e.data.result}:null);setError(e.data.error??"");setProgress("Scope inspection finished; review the report before analysis.");w.terminate();worker.current=null;};w.onerror=e=>{setBusy(false);setError(e.message);w.terminate();worker.current=null;};w.postMessage(req.request);}catch(e){setError(e instanceof Error?e.message:String(e));}};
 
-  const cancel=()=>{worker.current?.terminate();if(savedRun)void ResultStore.open().then(async s=>{await s.update(savedRun,{state:"cancelled",outcomes:outcomes.map(o=>["pending","running"].includes(o.status)?{...o,status:"cancelled",findings:["Cancelled; saved batches are incomplete."]}:o),note:"Cancelled; committed batches retained. No resume."});s.close();});worker.current=null;setBusy(false);setProgress("Cancelled. Completed contrasts are retained; remaining contrasts were not completed.");setOutcomes(os=>os.map(o=>["pending","running"].includes(o.status)?{...o,status:"cancelled",findings:["Cancelled by researcher; not completed."]}:o));};
+  const cancel=()=>{worker.current?.terminate();if(savedRun)void ResultStore.open().then(async s=>{await s.update(savedRun,{state:"cancelled",outcomes:outcomes.map(o=>["pending","running"].includes(o.status)?{...o,status:"cancelled",findings:["Cancelled; saved batches are incomplete."]}:o),note:"Cancelled; committed batches retained. No resume."});s.close();}).catch(e=>setError(`Cancellation state could not be saved: ${e instanceof Error?e.message:String(e)}`));worker.current=null;setBusy(false);setProgress("Cancelled. Completed contrasts are retained; remaining contrasts were not completed.");setOutcomes(os=>os.map(o=>["pending","running"].includes(o.status)?{...o,status:"cancelled",findings:["Cancelled by researcher; not completed."]}:o));};
 
   const run=async()=>{
 
     setError("");if(sampleOverride!==null&&sampleState.errors.length){setError(sampleState.errors.join(" "));return;}if(!ready){setError("No ready contrasts. Inspect the comparison details and confirm required metadata.");return;}
 
     setBusy(true);let runId:string;
-    try{const store=await ResultStore.open();const saved=await store.create(structuredClone(experiment),structuredClone(parameters),Math.floor(diskBudget*1024**3));store.close();runId=saved.id;setSavedRun(runId);}catch(e){setError(`Local result storage could not start: ${e instanceof Error?e.message:String(e)}`);setBusy(false);return;}
+    try{const store=await ResultStore.open();const saved=await store.create(structuredClone(experiment),structuredClone(parameters),Math.floor(diskBudget*1024**3),writeBatch);store.close();runId=saved.id;setSavedRun(runId);}catch(e){setError(`Local result storage could not start: ${e instanceof Error?e.message:String(e)}`);setBusy(false);return;}
     const frozen=structuredClone(experiment);setSnapshot({experiment:frozen,parameters:structuredClone(parameters)});setOutcomes(frozen.contrasts.map(c=>({contrastId:c.id,status:assessContrast(c,frozen).status,findings:assessContrast(c,frozen).findings})));setResources({});setBusy(true);setProgress("Preparing sequential local experiment worker…");
 
     const w=new Worker(new URL("../workers/experiment.worker.ts",import.meta.url),{type:"module"});worker.current=w;
@@ -195,6 +196,7 @@ export default function ExperimentWorkspace({inventory,parameters,onParameters,o
     {error&&<p className="error-box" role="alert">{error}</p>}
 
     <label>Local result payload budget (GiB)<input aria-label="Local result budget GiB" disabled={busy} type="number" min="0.01" max="16" step="0.25" value={diskBudget} onChange={e=>setDiskBudget(Number(e.target.value))}/></label>
+    <label>Records per storage batch (100–1000)<input aria-label="Storage write batch rows" disabled={busy} type="number" min="100" max="1000" step="100" value={writeBatch} onChange={e=>setWriteBatch(Number(e.target.value))}/></label>
     <SavedResults key={savedRun??"saved"} activeRun={savedRun} revision={busy?undefined:outcomes}/>
     {snapshot&&!savedRun&&<section className="experiment-results"><h2>Experiment gene explorer</h2><p>Results use the saved run configuration. Editing the form does not change completed outputs; run again to apply changes. No shared-control p-values are pooled.</p><div className="contrast-outcomes">{outcomes.map(o=><details key={o.contrastId}><summary>{o.contrastId}: {o.status}{o.result?` · ${o.result.links.length} candidate links`:""}</summary><p>{o.findings.join(" ")||"Source-specific validation is preserved in the ZIP."}</p>{o.result&&<pre>{JSON.stringify(o.result.validation,null,2)}</pre>}</details>)}</div>
 

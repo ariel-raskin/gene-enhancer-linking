@@ -16,3 +16,12 @@
 .workspace-grid.experiment-grid{grid-template-columns:minmax(0,1fr)}.experiment-grid>.panel{min-width:0;max-width:100%}.experiment-workspace .metadata-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.experiment-workspace .metadata-grid>label{min-width:0}.experiment-workspace summary{overflow-wrap:anywhere}.experiment-workspace .table-wrap{max-width:100%;overflow-x:auto}@media(max-width:700px){.experiment-workspace .metadata-grid{grid-template-columns:minmax(0,1fr)}.experiment-workspace .smart-actions{flex-wrap:wrap}.experiment-workspace .download-actions .button{overflow-wrap:anywhere;max-width:100%;white-space:normal}}
 
 .experiment-workspace pre{max-height:320px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:10px}
+
+/* Saved-run controls must fit independently of the experiment editor wrapper. */
+.experiment-results.panel{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.experiment-results.panel label{display:block;min-width:0}
+.experiment-results.panel input,.experiment-results.panel select{min-width:0;max-width:100%}
+.experiment-results.panel .smart-actions{flex-wrap:wrap}
+.experiment-results.panel .download-actions>span{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0;max-width:100%}
+.experiment-results.panel .button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:700px){.experiment-results.panel{padding:14px}.experiment-results.panel .results-toolbar>input{min-width:0}}

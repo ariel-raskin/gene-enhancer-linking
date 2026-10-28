@@ -6,8 +6,9 @@ const scope=self as unknown as DedicatedWorkerGlobalScope;
 let cancelled=false;
 scope.onmessage=async(e:MessageEvent<{action:string;runId:string;query?:Query;fileKey?:string;handle?:FileSystemFileHandle}>)=>{
  if(e.data.action==="cancel"){cancelled=true;return;}
- const store=await ResultStore.open();
+ let store:ResultStore|undefined;
  try{
+  store=await ResultStore.open();
   const {action,runId}=e.data,run=await store.get(runId);if(!run)throw new Error("Saved run no longer exists.");
   if(action==="query"){
    const q=e.data.query!;const result=await queryResults(store.db,q);const summaries:ReturnType<typeof featureSummary>[]=[];let summaryTotal=0;
@@ -23,6 +24,6 @@ scope.onmessage=async(e:MessageEvent<{action:string;runId:string;query?:Query;fi
    else written=await streamZip(persistentArtifacts(store,run),sink,(bytes,name)=>scope.postMessage({type:"progress",message:`Exported ${name} · ${(bytes/1024**2).toFixed(1)} MiB`}));
    scope.postMessage({type:"exported",name:e.data.fileKey??"gel-experiment.zip",bytes:written,strategy:handle?"direct filesystem stream":"bounded whole-Blob fallback (64 MiB)",blob:handle?undefined:new Blob(buffers)});
   }
- }catch(error){scope.postMessage({type:"error",error:error instanceof Error?error.message:String(error)});}finally{store.close();}
+ }catch(error){scope.postMessage({type:"error",error:error instanceof Error?error.message:String(error)});}finally{store?.close();}
 };
 export {};

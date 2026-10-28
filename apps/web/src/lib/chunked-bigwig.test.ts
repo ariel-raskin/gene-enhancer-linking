@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { runChunkedBigWigAnalysis, inspectBigWigScope, sumSignal, ChunkCache } from "./chunked-bigwig";
 import { runBigWigAnalysis, type BigWigRequest } from "./bigwig";
-import { DEFAULT_PARAMETERS, linksToBedpe, linksToInteract } from "./analysis";
+import { DEFAULT_PARAMETERS, linksToBedpe, linksToInteract, iterateLinks } from "./analysis";
 import { appendActive, planChunks, resolveScope, chunkCount, iterateChunks } from "./genomic-scope";
 const root=fileURLToPath(new URL("../../../../examples/",import.meta.url));
 async function fixture(folder="synthetic_chunks"):Promise<BigWigRequest>{
@@ -13,6 +13,7 @@ async function fixture(folder="synthetic_chunks"):Promise<BigWigRequest>{
 function comparable(r:Awaited<ReturnType<typeof runBigWigAnalysis>>|Awaited<ReturnType<typeof runChunkedBigWigAnalysis>>){return {genes:r.genes,enhancers:r.enhancers.map(({source,...s})=>{void source;return s;}),geneStats:r.geneStats,links:r.links};}
 function close(a:unknown,b:unknown){if(typeof a==="number"&&typeof b==="number")expect(a).toBeCloseTo(b,9);else if(Array.isArray(a)&&Array.isArray(b)){expect(a.length).toBe(b.length);a.forEach((v,i)=>close(v,b[i]));}else if(a&&b&&typeof a==="object"&&typeof b==="object"){expect(Object.keys(a).sort()).toEqual(Object.keys(b).sort());for(const k of Object.keys(a))close((a as Record<string,unknown>)[k],(b as Record<string,unknown>)[k]);}else expect(a).toEqual(b);}
 describe("bounded chromosome execution",()=>{
+ it("keeps generator candidate IDs, values and physical order invariant to feature row order",async()=>{const req=await fixture();const reference=await runChunkedBigWigAnalysis(req,()=>{});const meta={contrast:req.contrast,source:"bigwig" as const,compatibility:{status:"Compatibility unverified" as const,checks:[]},morphologyById:new Map(reference.enhancers.map(e=>[e.featureId,e.morphology!]))};const a=[...iterateLinks(reference.genes,reference.geneStats,reference.enhancers,req.parameters,meta)],b=[...iterateLinks([...reference.genes].reverse(),[...reference.geneStats].reverse(),[...reference.enhancers].reverse(),req.parameters,meta)];expect(a).toEqual(b);});
  it("persists identical scientific rows with bounded partition backpressure, without retained genome arrays",async()=>{
    const req=await fixture();req.genomicScope={version:1,mode:"genome",chromosomes:[],excludedContigs:[]};const reference=await runChunkedBigWigAnalysis(req,()=>{});
    const links:typeof reference.links=[],genes:typeof reference.genes=[],stats:typeof reference.geneStats=[],enhancers:typeof reference.enhancers=[];let active=false;

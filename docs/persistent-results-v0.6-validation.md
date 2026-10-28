@@ -40,6 +40,19 @@ Early whole-genome attempts were interrupted during test development/resource pr
 
 Concurrent browser suites caused timeouts and one actual browser quota error on the memory-constrained host. Browser tests now run with one worker. An initial large export also exposed repeated decompression from interleaved index traversal; exports now traverse deterministic compressed batches once per file. Final dense and serial regression trials below supersede these development attempts.
 
+## Dense synthetic capacity
+
+A normal-profile, one-contrast processed-data screen generated every pairing between 1,200 synthetic genes and 200 enhancer features within 100 kb:
+
+- **240,000 complete saved candidates**, exceeding the previous 200,000 experiment-retention guard; 484 committed batches at the default 500 records.
+- 267.85 s processing, including 262.42 s measured write work on this resource-constrained Windows host.
+- 484,834,592 bytes estimated uncompressed payload; 256,434,227 bytes measured origin usage.
+- 100-row keyset pagination, exact gene lookup (200 candidates), and discordant filter (100 candidates) passed.
+- A direct-file TSV stream wrote **147,036,738 bytes / 240,000 data rows** in 24.62 s without a complete download Blob.
+- Observed main JS heap after the screen: approximately 10 MB. This does not measure worker heaps, native buffers, browser caches or complete process peak memory.
+
+This artificial all-to-all local geometry is a storage/execution stress fixture, not a biological benchmark. It contains no HEL measurements or coordinates. Final configurable-batch and release reruns are recorded separately.
+
 ## Capacity and unsupported cases
 
 The legacy single-view guards remain. Persistent mode replaces retained pair arrays with bounded database writes, not unlimited storage. IndexedDB overhead, journals, browser quota, source-reader caches and OS pressure remain relevant. Payload estimates, main JS heap, worker memory, native buffers and physical storage are different quantities. Only origin usage and limited main-heap observations were measured; no complete process/worker peak-memory bound is claimed.

@@ -17,7 +17,7 @@ Choose **Organize as experiment** for persistent results. The legacy simple view
 | Experiment orchestration | All layers/contrasts and duplicate-ID sets | Metadata/counters only; database uniqueness |
 | Worker messages / React | Structured-cloned full results | Small status reports; at most 100 queried rows |
 | Explorer | Full filter/sort and gene-to-link arrays | Index queries, keyset pages, materialized gene counts |
-| Export workers | Cloned outcomes and all formatted files | 500-row reads and bounded UTF-8 encoding |
+| Export workers | Cloned outcomes and all formatted files | bounded batch reads and bounded UTF-8 encoding |
 | JSZip / download Blob | Full archive buffered | ZIP64 writer to selected file; explicit 64 MiB Blob fallback |
 
 ```mermaid
@@ -25,7 +25,7 @@ flowchart LR
   F[Local File objects] --> W[Existing analysis worker]
   W --> C[Complete chromosome measurements]
   C --> G[Same scientific row generator]
-  G --> B[At most 500 records]
+  G --> B[At most 1,000 records]
   B -->|await commit| I[(Local IndexedDB)]
   I --> Q[Query worker: 100-row page]
   Q --> R[React explorer]
@@ -52,7 +52,7 @@ Database `gel-results-v1`, schema 1:
 
 One strict-durability transaction commits checkpoint, rows, feature counters and run counters. Identical retries are no-ops; changed content at an existing checkpoint is rejected. A duplicate candidate in another batch aborts the transaction. Features precede their rows; an interruption can leave explicit partial features.
 
-Write batches: at most 500 records and a 4 MiB decoded-text estimate. At most eight decoded batches / 8 MiB estimated UTF-16 are cached per connection, plus the current 500-row export page or 100-row view. These estimates exclude object/native overhead. Awaited commits provide backpressure.
+Write batches: configurable 100–1,000 records (default 500) and a 4 MiB decoded-text estimate. At most eight decoded batches / 8 MiB estimated UTF-16 are cached per connection, plus the current batch of up to 1,000 rows or 100-row view. These estimates exclude object/native overhead. Awaited commits provide backpressure.
 
 ## Capacity and failure
 
@@ -76,7 +76,7 @@ ZIP64 STORE uses incremental CRC32/data descriptors and a bounded central direct
 
 Ordinary **Download** buttons buffer the whole file/ZIP as a Blob, capped at 64 MiB. They are not streaming to disk. Oversized downloads fail rather than truncate. Browser crashes can leave temporary files; successful finalization is never inferred from starting a write.
 
-Exports include TSV/CSV, all gene summaries, BED/BEDPE, UCSC interact/tier files, per-contrast/layer tables, manifest, parameters, provenance, execution state and validation. Weak, discordant, insufficient and committed partial rows are retained. Master tables append `execution_status` and `run_state`. Coordinate/strand/anchor semantics are unchanged; table order is deterministic genomic/contrast order instead of the old retained symbol sort.
+Exports include TSV/CSV, all gene summaries, BED/BEDPE, UCSC interact/tier files, per-contrast/layer tables, manifest, parameters, provenance, execution state and validation. Weak, discordant, insufficient and committed partial rows are retained. Master tables append `execution_status` and `run_state`. Coordinate/strand/anchor semantics are unchanged; table order is deterministic chromosome/contrast and gene-coordinate batch order instead of the old retained symbol sort.
 
 ## Privacy, lifecycle and recovery
 

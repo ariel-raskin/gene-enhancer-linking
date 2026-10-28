@@ -3,11 +3,12 @@ import type { Experiment, Outcome } from "./experiment";
 
 export const RESULT_DB = "gel-results-v1";
 export const STORE_SCHEMA = 1;
-export const WRITE_BATCH = 500;
+export const WRITE_BATCH = 1000;
+export const DEFAULT_WRITE_BATCH = 500;
 export const DEFAULT_DISK_BUDGET = 4 * 1024 ** 3;
 export type RunState = "running" | "complete" | "cancelled" | "failed" | "partial";
 export type Layer = "primary" | "track";
-export type SavedRun = { id:string; schema:1; created:string; updated:string; state:RunState; experiment:Experiment; parameters:Parameters; outcomes:Outcome[]; rows:number; bytes:number; batches:number; budget:number; writeMs?:number; resources:Record<string,unknown>; note?:string; recoveryReserve?:string };
+export type SavedRun = { id:string; schema:1; created:string; updated:string; state:RunState; experiment:Experiment; parameters:Parameters; outcomes:Outcome[]; rows:number; bytes:number; batches:number; budget:number; batchRows?:number; writeMs?:number; resources:Record<string,unknown>; note?:string; recoveryReserve?:string };
 export type StoredRow = { run:string; layer:Layer; contrast:string; id:string; row:Link; symbol:string; gene:string; distanceValue:number; magnitudeValue:number };
 type IndexedRow = Omit<StoredRow,"row"> & {row:Pick<Link,"chrom"|"enhancer_start"|"enhancer_end"|"enhancer_id"|"evidence_tier"|"morphology"|"gene_padj"|"enhancer_padj">;batchKey:IDBValidKey[];position:number};
 export type StoredFeature = {run:string;layer:Layer;contrast:string;kind:"gene"|"enhancer"|"promoter";id:string;value:Gene|Differential;stat?:Differential;counts:Record<string,number>};
@@ -41,9 +42,10 @@ export class ResultStore {
   close(){this.db.close();}
   async get(id:string){const t=this.db.transaction("runs");return req(t.objectStore("runs").get(id)) as Promise<SavedRun|undefined>;}
   async list(){const t=this.db.transaction("runs");return (await req(t.objectStore("runs").getAll()) as SavedRun[]).sort((a,b)=>b.created.localeCompare(a.created));}
-  async create(experiment:Experiment,parameters:Parameters,budget=DEFAULT_DISK_BUDGET){
+  async create(experiment:Experiment,parameters:Parameters,budget=DEFAULT_DISK_BUDGET,batchRows=DEFAULT_WRITE_BATCH){
+    if(!Number.isInteger(batchRows)||batchRows<100||batchRows>WRITE_BATCH)throw new Error("Choose write batches of 100–1000 records.");
     if(!Number.isSafeInteger(budget)||budget<1024)throw new Error("Invalid local result byte budget.");
-    const now=new Date().toISOString();const run:SavedRun={id:crypto.randomUUID(),schema:1,created:now,updated:now,state:"running",experiment,parameters,outcomes:[],rows:0,bytes:0,batches:0,budget,resources:{},recoveryReserve:" ".repeat(65536)};
+    const now=new Date().toISOString();const run:SavedRun={id:crypto.randomUUID(),schema:1,created:now,updated:now,state:"running",experiment,parameters,outcomes:[],rows:0,bytes:0,batches:0,budget,batchRows,resources:{},recoveryReserve:" ".repeat(65536)};
     const t=this.db.transaction("runs","readwrite");const complete=done(t);if(await req(t.objectStore("runs").count())>=50){t.abort();await complete.catch(()=>{});throw new Error("At most 50 saved runs; export/delete older local results before starting another run.");}t.objectStore("runs").add(run);await complete;return run;
   }
   async update(id:string,patch:Partial<Pick<SavedRun,"state"|"outcomes"|"resources"|"note">>){
@@ -55,7 +57,7 @@ export class ResultStore {
   async commit(run:string,layer:Layer,contrast:string,partition:string,sequence:number,rows:Link[],features?:StoredFeature[]){
     const writeStarted=performance.now();
     if(sequence%16===0&&navigator.storage?.estimate){const e=await navigator.storage.estimate();if(e.quota&&e.usage!==undefined&&e.quota-e.usage<Math.max(256*1024**2,e.quota*0.2))throw new DOMException("Browser origin storage headroom below 20% (at least 256 MiB reserved). Export/delete saved runs or use a smaller scope.","QuotaExceededError");}
-    if(rows.length>WRITE_BATCH||(features?.length??0)>WRITE_BATCH)throw new Error("Write batch exceeds 500 records.");
+    if(rows.length>WRITE_BATCH||(features?.length??0)>WRITE_BATCH)throw new Error("Write batch exceeds 1000 records.");
     const serialized=JSON.stringify({rows,features});if(serialized.length*2>4*1024**2)throw new Error("Write batch exceeds 4 MiB estimate; narrow oversized feature identifiers.");
     const rowBytes=new TextEncoder().encode(JSON.stringify(rows));
     const codec=typeof CompressionStream!=="undefined"?"gzip":"json";
@@ -85,16 +87,16 @@ export class ResultStore {
   }
   sink(run:string,layer:Layer,contrast:string,signal?:AbortSignal,progress?:(message:string)=>void):ResultSink {
     return {partition:async(id,features,rows)=>{
-      let sequence=0;
+      let sequence=0;const batchRows=(await this.get(run))?.batchRows??DEFAULT_WRITE_BATCH;
       if(features.chromosomeSizes){const r=await this.get(run);if(!r)throw new Error("Run deleted before chromosome persistence.");const all=(r.resources.savedChromosomeSizes??{}) as Record<string,Record<string,number>>,key=JSON.stringify([layer,contrast]);await this.update(run,{resources:{savedChromosomeSizes:{...all,[key]:{...all[key],...features.chromosomeSizes}}}});}
       const check=()=>{if(signal?.aborted)throw new DOMException("Cancelled; committed batches retained.","AbortError");};
       const featureRows:StoredFeature[]=[];
       const flush=async()=>{if(featureRows.length){check();await this.commit(run,layer,contrast,id,sequence++,[],featureRows.splice(0));if(sequence%16===0)progress?.(`${id} · persisting feature batch ${sequence}`);}};
       const stats=new Map(features.geneStats.map(s=>[s.featureId,s]));
-      for(const g of features.genes){featureRows.push({run,layer,contrast,kind:"gene",id:g.geneId,value:g,stat:stats.get(g.geneId),counts:{}});if(featureRows.length===WRITE_BATCH)await flush();}await flush();
-      for(const kind of ["enhancer","promoter"] as const){for(const v of kind==="enhancer"?features.enhancers:features.secondaryGeneStats??[]){featureRows.push({run,layer,contrast,kind,id:v.featureId,value:v,counts:{}});if(featureRows.length===WRITE_BATCH)await flush();}await flush();}
+      for(const g of features.genes){featureRows.push({run,layer,contrast,kind:"gene",id:g.geneId,value:g,stat:stats.get(g.geneId),counts:{}});if(featureRows.length===batchRows)await flush();}await flush();
+      for(const kind of ["enhancer","promoter"] as const){for(const v of kind==="enhancer"?features.enhancers:features.secondaryGeneStats??[]){featureRows.push({run,layer,contrast,kind,id:v.featureId,value:v,counts:{}});if(featureRows.length===batchRows)await flush();}await flush();}
       let batch:Link[]=[],total=0;
-      for(const row of rows){check();batch.push(row);total++;if(batch.length===WRITE_BATCH){await this.commit(run,layer,contrast,id,sequence++,batch);if(sequence%16===0)progress?.(`${id} · persisted ${total.toLocaleString()} candidate rows`);batch=[];}}
+      for(const row of rows){check();batch.push(row);total++;if(batch.length===batchRows){await this.commit(run,layer,contrast,id,sequence++,batch);if(sequence%16===0)progress?.(`${id} · persisted ${total.toLocaleString()} candidate rows`);batch=[];}}
       if(batch.length){check();await this.commit(run,layer,contrast,id,sequence++,batch);}
       return total;
     }};
