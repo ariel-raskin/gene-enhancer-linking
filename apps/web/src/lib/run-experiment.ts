@@ -9,8 +9,8 @@ import { assessContrast, requestsForContrast, MAX_CONTRASTS, MAX_EXPERIMENT_ROWS
 export type ExperimentEvent = { type: "state"; outcome: Outcome; completed: number; total: number } | { type: "progress"; contrastId: string; message: string };
 export async function runExperiment(exp: Experiment, files: Record<string, File>, parameters: Parameters,
   emit: (event: ExperimentEvent) => void, execute?: (request: AnalysisRequest, report: (message: string) => void) => Promise<ExportInput>, signal?: AbortSignal, persistence?:{sink:(contrast:string,layer:"primary"|"track")=>ResultSink;snapshot:()=>Promise<{rows:number;bytes:number;writeMs?:number}>;record?:(outcomes:Outcome[])=>Promise<void>}) {
-  if(exp.contrasts.some(c=>!c.id.trim())||new Set(exp.contrasts.map(c=>c.id)).size!==exp.contrasts.length)throw new Error("Contrasts require unique nonempty identifiers; repeated controls must use distinct contrast IDs.");
   if (exp.contrasts.length > MAX_CONTRASTS) throw new Error(`At most ${MAX_CONTRASTS} contrasts per experiment.`);
+  if(exp.contrasts.some(c=>!c.id.trim())||new Set(exp.contrasts.map(c=>c.id)).size!==exp.contrasts.length)throw new Error("Contrasts require unique nonempty identifiers; repeated controls must use distinct contrast IDs.");
   if (Object.values(parameters).some(v=>typeof v==="number"&&(!Number.isFinite(v)||v<0)) || parameters.maxPadj>1 || parameters.peakBinBp<1 || parameters.maxDistanceBp<1 || parameters.pseudocount<=0) throw new Error("Analysis thresholds must be finite and valid; distance, bin size and pseudocount must be positive, and adjusted p-value must be between 0 and 1.");
   const cache = new AnalysisCache(); const chunkCache = new ChunkCache(); const perform = execute ?? ((req, report) => executeAnalysis(req, report, cache, signal, chunkCache));
   const referenceLengths=new Map<string,number>();
