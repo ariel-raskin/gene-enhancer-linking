@@ -255,14 +255,14 @@ export function promoterOverlap(enhancer: Differential, gene: Gene, params: Para
   return enhancer.start < right && left < enhancer.end;
 }
 
-export function buildLinks(genes: Gene[], geneStats: Differential[], enhancers: Differential[], params: Parameters, metadata: { contrast: string; compatibility: Compatibility; morphologyById?: Map<string, string>; source: "differential" | "bigwig"; maxLinks?: number }) {
+export function* iterateLinks(genes: Gene[], geneStats: Differential[], enhancers: Differential[], params: Parameters, metadata: { contrast: string; compatibility: Compatibility; morphologyById?: Map<string, string>; source: "differential" | "bigwig"; maxLinks?: number }) {
   const geneStat = new Map(geneStats.map((stat) => [stat.featureId, stat]));
-  const links: Link[] = [];
+  let count = 0;
   const byChrom = new Map<string, Differential[]>();
   for (const enhancer of enhancers) { const list = byChrom.get(enhancer.chrom) ?? []; list.push(enhancer); byChrom.set(enhancer.chrom, list); }
-  for (const list of byChrom.values()) list.sort((a, b) => a.start - b.start);
+  for (const list of byChrom.values()) list.sort((a, b) => a.start - b.start || a.end - b.end || a.featureId.localeCompare(b.featureId));
   const maxLength = new Map([...byChrom].map(([chrom, list]) => [chrom, list.reduce((largest, item) => Math.max(largest, item.end - item.start), 1)]));
-  for (const gene of genes) {
+  for (const gene of [...genes].sort((a,b)=>a.chrom.localeCompare(b.chrom)||a.start-b.start||a.end-b.end||a.geneId.localeCompare(b.geneId))) {
     const tssPos = tss(gene); const stat = geneStat.get(gene.geneId); const list = byChrom.get(gene.chrom) ?? [];
     const leftBound = tssPos - params.maxDistanceBp - (maxLength.get(gene.chrom) ?? 1);
     const rightBound = tssPos + params.maxDistanceBp;
@@ -289,7 +289,7 @@ export function buildLinks(genes: Gene[], geneStats: Differential[], enhancers: 
         tier = "weak"; reason = "descriptive BigWig signal changes are directionally similar; no p-values are inferred";
       }
       const mid = Math.floor((enhancer.start + enhancer.end) / 2);
-      links.push({ link_id: `${enhancer.featureId}__${gene.geneId}`, gene_id: gene.geneId, gene_symbol: gene.symbol, gene_chrom: gene.chrom, gene_start: gene.start, gene_end: gene.end,
+      const row: Link = { link_id: `${enhancer.featureId}__${gene.geneId}`, gene_id: gene.geneId, gene_symbol: gene.symbol, gene_chrom: gene.chrom, gene_start: gene.start, gene_end: gene.end,
         gene_strand: gene.strand, tss: tssPos, enhancer_id: enhancer.featureId, chrom: enhancer.chrom, enhancer_start: enhancer.start, enhancer_end: enhancer.end,
         distance_bp: distance, midpoint_to_tss_bp: mid - tssPos, transcription_oriented_offset_bp: (mid - tssPos) * (gene.strand === "+" ? 1 : -1),
         gene_log2fc: gLfc, enhancer_log2fc: eLfc, gene_se: stat?.se ?? null, enhancer_se: enhancer.se,
@@ -298,12 +298,19 @@ export function buildLinks(genes: Gene[], geneStats: Differential[], enhancers: 
         direction_agreement: same, magnitude_gap_log2fc: eLfc === null || gLfc === null ? null : Math.abs(Math.abs(eLfc) - Math.abs(gLfc)),
         morphology: metadata.morphologyById?.get(enhancer.featureId) ?? "catalog_transcribed_region", overlaps_promoter: isPromoter, overlaps_gene_body: isBody,
         evidence_tier: tier, evidence_source: metadata.source === "bigwig" ? "descriptive local BigWig signal" : "matched differential feature estimates", contrast: metadata.contrast,
-        compatibility_status: metadata.compatibility.status, classification_reason: reason });
-      if (links.length > (metadata.maxLinks ?? 1_000_000)) throw new Error("Candidate pair count exceeds the configured browser safety limit; this contrast is incomplete. Restrict the distance window or use a local workflow.");
+        compatibility_status: metadata.compatibility.status, classification_reason: reason };
+      if (++count > (metadata.maxLinks ?? 1_000_000)) throw new Error("Candidate pair count exceeds the configured browser safety limit; this contrast is incomplete. Restrict the distance window or use a local workflow.");
+      yield row;
     }
   }
-  return links.sort((a, b) => a.gene_symbol.localeCompare(b.gene_symbol) || a.distance_bp - b.distance_bp || a.enhancer_id.localeCompare(b.enhancer_id));
 }
+
+/** Frozen collecting interface; persistent execution consumes the same generator. */
+export function buildLinks(...args: ParametersOfLinks) {
+  return [...iterateLinks(...args)].sort((a, b) => a.gene_symbol.localeCompare(b.gene_symbol) || a.distance_bp - b.distance_bp || a.enhancer_id.localeCompare(b.enhancer_id));
+}
+
+type ParametersOfLinks = [Gene[], Differential[], Differential[], Parameters, { contrast:string; compatibility:Compatibility; morphologyById?:Map<string,string>; source:"differential"|"bigwig"; maxLinks?:number }];
 
 export function checkCompatibility(input: { bigwigAssembly?: string; statsAssembly?: string; bigwigChromStyle?: string; statsChromStyle?: string; contrastMatched?: boolean | null; normalizationKnown?: boolean; strandKnown?: boolean; exactFeatureMapping?: boolean; coordinateCompatible?: boolean | null }): Compatibility {
   const checks: Compatibility["checks"] = [];

@@ -1,4 +1,5 @@
-import { importGenes, buildLinks, type Differential, type Gene, type Link } from "./analysis";
+import type { ResultSink } from "./result-store";
+import { importGenes, buildLinks, iterateLinks, type Differential, type Gene, type Link } from "./analysis";
 import { open, classifyGeometry, type BigWigRequest } from "./bigwig";
 import { readLocalText } from "./read-local-text";
 import { appendActive, iterateChunks, chunkCount, resolveScope, validateExecution, DEFAULT_EXECUTION, SIGNAL_BUDGET, COMPRESSED_BUDGET, MAX_FEATURES, type Region } from "./genomic-scope";
@@ -53,7 +54,7 @@ function overlapSweep(intervals:{start:number;end:number}[]) {
 function response(id:string,chrom:string,start:number,end:number,sums:Float64Array,pseudocount:number):Differential{
   const c=sums[0]+sums[1],t=sums[2]+sums[3];return {featureId:id,chrom,start,end,log2fc:Math.log2((t+pseudocount)/(c+pseudocount)),se:null,pvalue:null,padj:null,baseMean:(c+t)/2,source:"local BigWig signal discovery",sourceId:id,sourceCoordinates:"BigWig query returns 0-based half-open intervals"};
 }
-export async function runChunkedBigWigAnalysis(request:BigWigRequest,progress:(message:string)=>void,signal?:AbortSignal,cache=new ChunkCache()) {
+export async function runChunkedBigWigAnalysis(request:BigWigRequest,progress:(message:string)=>void,signal?:AbortSignal,cache=new ChunkCache(),sink?:ResultSink) {
   const initialCacheHits=cache.hits;
   const started=performance.now(),limits=validateExecution(request.execution??DEFAULT_EXECUTION),bin=Math.max(10,Math.floor(request.parameters.peakBinBp));
   const abort=()=>{if(signal?.aborted)throw new DOMException("Analysis cancelled; current contrast is incomplete.","AbortError");};abort();
@@ -104,7 +105,7 @@ export async function runChunkedBigWigAnalysis(request:BigWigRequest,progress:(m
         // Same division/multiplication as the frozen regional implementation.
         if((mean*(end-start))/(end-start)>=p.minMeanSignal)appendActive(peaks,start,end,p.mergeGapBp);
       }
-      if(peaks.length+allEnhancers.length>MAX_FEATURES)throw new Error("Peak summary budget exceeded (200,000). Raise the signal floor or narrow the scope; no truncation is returned.");
+      if(peaks.length+(sink?0:allEnhancers.length)>MAX_FEATURES)throw new Error("Peak summary budget exceeded (200,000). Raise the signal floor or narrow the scope; no truncation is returned.");
       for(const g of geneSweep(core))for(let i=0;i<4;i++)geneSums[g.i][i]+=sumSignal(data[i],Math.max(g.start,core.start===region.start?g.start:core.start),Math.min(g.end,core.end===region.end?g.end:core.end));
     });
     const sums=peaks.map(()=>new Float64Array(4)),geometry=peaks.map(()=>new Float64Array(4)),peakSweep=overlapSweep(peaks);
@@ -126,12 +127,19 @@ export async function runChunkedBigWigAnalysis(request:BigWigRequest,progress:(m
     // Reuse the regional pairing index and enforce the output cap as rows are generated.
     const morphologyById=new Map(enhancers.map(e=>[e.featureId,e.morphology!]));
     // Shared interval index is constructed once inside buildLinks, with an explicit cap.
-    const batch=buildLinks(selected,stats,enhancers,p,{contrast:request.contrast,compatibility:{status:"Compatibility unverified",checks:[]},morphologyById,source:"bigwig",maxLinks:limits.maxPairs-links.length});
-    chromosomeSummaries.push({chrom:region.chrom,bases:region.end-region.start,genes:selected.length,rawPeaks:peaks.length,retainedPeaks:enhancers.length,pairs:batch.length});
-    for(const row of batch)links.push(row);for(const g of selected)allGenes.push(g);for(const s of stats)allStats.push(s);for(const e of enhancers)allEnhancers.push(e);
-    if(JSON.stringify({genes:allGenes,geneStats:allStats,enhancers:allEnhancers,links}).length*2>96*1024*1024)throw new Error("Result summary budget exceeds 96 MiB. Narrow the scope or distance. The current contrast is incomplete; no truncated success is returned.");
+    const metadata={contrast:request.contrast,compatibility:{status:"Compatibility unverified" as const,checks:[]},morphologyById,source:"bigwig" as const,maxLinks:sink?Number.MAX_SAFE_INTEGER:limits.maxPairs-links.length};
+    let pairs=0;
+    if(sink){
+      pairs=await sink.partition(region.chrom,{genes:selected,geneStats:stats,enhancers,chromosomeSizes:{[region.chrom]:dictionaries[0][region.chrom]}},iterateLinks(selected,stats,enhancers,p,metadata));
+      progress(`${region.chrom} · persisted ${pairs.toLocaleString()} candidate rows; next chromosome`);
+    }else{
+      const batch=buildLinks(selected,stats,enhancers,p,metadata);pairs=batch.length;
+      for(const row of batch)links.push(row);for(const g of selected)allGenes.push(g);for(const s of stats)allStats.push(s);for(const e of enhancers)allEnhancers.push(e);
+      if(JSON.stringify({genes:allGenes,geneStats:allStats,enhancers:allEnhancers,links}).length*2>96*1024*1024)throw new Error("Result summary budget exceeds 96 MiB. Narrow the scope or distance. The current contrast is incomplete; no truncated success is returned.");
+    }
+    chromosomeSummaries.push({chrom:region.chrom,bases:region.end-region.start,genes:selected.length,rawPeaks:peaks.length,retainedPeaks:enhancers.length,pairs});
   }
   metrics.cacheHits=cache.hits-initialCacheHits;
   links.sort((a,b)=>a.gene_symbol.localeCompare(b.gene_symbol)||a.distance_bp-b.distance_bp||a.enhancer_id.localeCompare(b.enhancer_id));
-  return {genes:allGenes,enhancers:allEnhancers,geneStats:allStats,links,validation:{mode:"Chunked BigWig-only descriptive",genomeAssembly:request.genomeAssembly,scope:request.genomicScope,scopePlan:plan,inputFileBytes:files.reduce((n,f)=>n+f.size,request.annotationFile.size),chromosomeSummaries,execution:metrics,complete:true,truncated:false,normalization:request.normalization,pValuesProduced:false,chromosomeDictionaryAgreement:true,chromosomeSizes:Object.fromEntries(plan.regions.map(r=>[r.chrom,dictionaries[0][r.chrom]])),elapsedMs:Math.round(performance.now()-started),warnings:["Descriptive track ratios, not differential p-values or causal links.","Regional parity retains full boundary-crossing BigWig records when integrating gene envelopes; include full genes in interval scopes. Chromosome scopes have no external boundary records.","Whole-genome capacity depends on explicit output and device budgets; no silent contig exclusions."]}};
+  return {genes:allGenes,enhancers:allEnhancers,geneStats:allStats,links,validation:{mode:"Chunked BigWig-only descriptive",persisted:!!sink,genomeAssembly:request.genomeAssembly,scope:request.genomicScope,scopePlan:plan,inputFileBytes:files.reduce((n,f)=>n+f.size,request.annotationFile.size),chromosomeSummaries,execution:metrics,complete:true,truncated:false,normalization:request.normalization,pValuesProduced:false,chromosomeDictionaryAgreement:true,chromosomeSizes:Object.fromEntries(plan.regions.map(r=>[r.chrom,dictionaries[0][r.chrom]])),elapsedMs:Math.round(performance.now()-started),warnings:["Descriptive track ratios, not differential p-values or causal links.","Regional parity retains full boundary-crossing BigWig records when integrating gene envelopes; include full genes in interval scopes. Chromosome scopes have no external boundary records.","Whole-genome capacity depends on explicit output and device budgets; no silent contig exclusions."]}};
 }
