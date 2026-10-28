@@ -10,7 +10,7 @@ This changes result storage and diagnostics. Discovery, coordinates, normalizati
 
 Two repetitions per size alternate baseline and candidate in separate normal persistent Chromium profiles. The profiles contain synthetic data only. Query totals and first-page identifiers match for genomic order, distance, magnitude, gene, enhancer, contrast and coordinate/morphology queries. Complete TSV counts and FNV-1a diagnostic checksums match; FNV is not a cryptographic hash. Each stored scientific batch independently retains the existing SHA-256 integrity checks. Scientific regression and private Python parity are separate validation tracks.
 
-Persistence wall time starts at the storage sink, includes lazy row generation, validation/packing, feature writes, summaries, checkpoints and awaited commits, and excludes parsing/setup, queries, export and deletion. It is not the entire application or BigWig scan time. Export timings end after the writable closes; subsequent readback verification is excluded.
+Persistence wall time starts at the storage sink, includes lazy row generation, validation/packing, feature writes, summaries, checkpoints and awaited commits, and excludes parsing/setup, queries, export and deletion. It is not the entire application or BigWig scan time. Synthetic export timings end after the writable closes; subsequent readback verification is excluded. Private UI-harness stream timings additionally include full file row-count readback and removal, and are labeled separately.
 
 Reproduce from the repository root with a running local production server (`npm run build --prefix apps/web`, then `npm run start --prefix apps/web`):
 
@@ -45,6 +45,8 @@ The 240,000-row persistence reduction is approximately **42%**, or 1.73 times th
 Both complete 240,000-row TSVs were 126,876,738 bytes with the same diagnostic checksum. Their shorter benchmark labels explain the size difference from the v0.6 UI stress fixture's 147,036,738-byte export. The 20,000-row TSV was 10,479,738 bytes. ZIP sizes differ slightly because provenance now includes schema and profiling diagnostics, and timestamps are run-specific.
 
 Median reported origin usage for 240,000 rows was approximately 211.25 MB versus 118.99 MB (decimal), about 44% lower. The compressed scientific payload was identical: 7,960,468 bytes in the instrumented trials. Origin estimates are noisy for small runs; use counts and verified output contents to establish completeness, not a storage-size estimate.
+
+Both layouts produced 2,160,000 secondary index entries in 485 batch transactions. Full-origin usage divided by the identical gzip row payload was about 26.5 versus 15.0; this includes feature records, metadata, indexes, journals and free pages, so it is **not** a direct measurement of index-only or filesystem write amplification. The UTF-8 scientific row payload was 237,030,490 bytes. Compressed payload bytes and serialization sizes are exact application byte counts; IndexedDB exposes no counter of physical bytes written per index mutation. Native filesystem I/O and total worker/native peak allocation are not measured by these JavaScript counters.
 
 Indexed-query medians (milliseconds, hydrated first 100 rows plus exact count):
 

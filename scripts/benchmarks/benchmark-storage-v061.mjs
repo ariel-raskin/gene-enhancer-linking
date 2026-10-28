@@ -56,6 +56,31 @@ for(const count of counts)for(let repeat=0;repeat<repeats;repeat++)for(const nam
  const js=['actual','raw'].includes(name)?ts.transpileModule((name==='actual'?actual:baseline).replace('"gel-results-v1"',JSON.stringify('gel-benchmark-'+name)),{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText:instrument(variant(baseline,name),name);
  const report=await page.evaluate(async({js,analysis,count,graph,exportsRoot,zipRoot,experimentRoot,doExport,largeZip})=>{
   const module=async(s)=>import(URL.createObjectURL(new Blob([s],{type:'text/javascript'}))),api=await module(js),sci=await module(analysis),s=await api.ResultStore.open();
+  // Verify the writer's ZIP64 STORE output by bounded seeks and streamed CRC readback, outside export timing.
+  const verifyZip=async(file)=>{
+   const view=async(offset,length)=>new DataView(await file.slice(offset,offset+length).arrayBuffer());
+   const end=await view(file.size-98,98);if(end.getUint32(0,true)!==0x06064b50||end.getUint32(56,true)!==0x07064b50||end.getUint32(76,true)!==0x06054b50)throw Error('Incomplete ZIP64 footer');
+   const entries=Number(end.getBigUint64(32,true)),cdSize=Number(end.getBigUint64(40,true)),cdStart=Number(end.getBigUint64(48,true));
+   if(entries>4096||cdSize>2*1024**2||cdStart+cdSize!==file.size-98)throw Error('Invalid ZIP directory bounds');
+   const crcTable=Uint32Array.from({length:256},(_,i)=>{for(let n=0;n<8;n++)i=i&1?0xedb88320^(i>>>1):i>>>1;return i>>>0;});
+   let offset=cdStart,verifiedBytes=0,masterRows;
+   for(let i=0;i<entries;i++){
+    const h=await view(offset,46),nameLength=h.getUint16(28,true),extraLength=h.getUint16(30,true),commentLength=h.getUint16(32,true);
+    if(h.getUint32(0,true)!==0x02014b50||h.getUint16(10,true)!==0||extraLength!==28)throw Error('Unexpected ZIP entry layout');
+    const name=new TextDecoder().decode(await file.slice(offset+46,offset+46+nameLength).arrayBuffer()),extra=await view(offset+46+nameLength,extraLength);
+    const size=Number(extra.getBigUint64(4,true)),compressed=Number(extra.getBigUint64(12,true)),start=Number(extra.getBigUint64(20,true));
+    if(extra.getUint16(0,true)!==1||size!==compressed)throw Error('Invalid ZIP64 sizes');
+    const local=await view(start,30);if(local.getUint32(0,true)!==0x04034b50)throw Error('Missing ZIP local header');
+    const dataStart=start+30+local.getUint16(26,true)+local.getUint16(28,true);if(dataStart+size+24>cdStart)throw Error('ZIP payload exceeds directory');
+    const reader=file.slice(dataStart,dataStart+size).stream().getReader();let crc=0xffffffff,bytes=0,lines=0;
+    while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.length;for(const b of part.value){crc=crcTable[(crc^b)&255]^(crc>>>8);if(b===10)lines++;}}
+    crc=(crc^0xffffffff)>>>0;const descriptor=await view(dataStart+size,24);
+    if(bytes!==size||crc!==h.getUint32(16,true)||descriptor.getUint32(0,true)!==0x08074b50||descriptor.getUint32(4,true)!==crc||Number(descriptor.getBigUint64(8,true))!==size||Number(descriptor.getBigUint64(16,true))!==size)throw Error('ZIP entry CRC/size mismatch: '+name);
+    if(name==='gel_experiment_links.tsv'){masterRows=lines;if(lines!==count)throw Error('Truncated ZIP master table');}
+    verifiedBytes+=size;offset+=46+nameLength+extraLength+commentLength;
+   }
+   if(offset!==cdStart+cdSize||masterRows!==count)throw Error('ZIP directory/count mismatch');return {entries,verifiedBytes,masterRows,allEntryCrcs:true};
+  };
   const urls={};const load=async(key)=>{if(urls[key])return urls[key];let code=graph[key].code;for(const [specifier,child]of Object.entries(graph[key].dependencies))code=code.replaceAll('"'+specifier+'"','"'+await load(child)+'"');return urls[key]=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));};
   const ex=await import(await load(exportsRoot)),zip=await import(await load(zipRoot)),expApi=await import(await load(experimentRoot));
   const genesCount=count===240000?1200:100,enhCount=200;let gb='Transcript\tGene\tbaseMean\tlog2FoldChange\tlfcSE\tstat\tpvalue\tpadj\n',coords='Transcript\tGene\tchr\tstart\tend\tstrand\tgbc_control\tgbc_treatment\n',enh='Enhancer_ID\tchr\tstart\tend\tbaseMean\tlog2FoldChange\tlfcSE\tstat\tpvalue\tpadj\n';
@@ -69,7 +94,7 @@ for(const count of counts)for(let repeat=0;repeat<repeats;repeat++)for(const nam
   const beforeDelete=await navigator.storage.estimate(),liveIndexedDbFileLengths=await window.gelBenchmarkDiskBytes(),exports=[];
   if(doExport){const dir=await navigator.storage.getDirectory();for(const format of count<=20000||largeZip?['tsv','zip']:['tsv']){const fileName='bench.'+format,handle=await dir.getFileHandle(fileName,{create:true}),file=await handle.createWritable(),at=performance.now();let bytes=0;const sink={write:async(b)=>{await file.write(b);bytes+=b.length;},close:()=>file.close(),abort:e=>file.abort(e)};
     if(format==='zip')await zip.streamZip(ex.persistentArtifacts(s,saved),sink);else{for await(const item of ex.persistentArtifacts(s,saved))if(item.name==='gel_experiment_links.tsv'){for await(const part of item.data)await sink.write(part);break;}await sink.close();}
-    const elapsedMs=performance.now()-at,stored=await handle.getFile();let checksum=2166136261,lines=0;const reader=stored.stream().getReader();while(true){const part=await reader.read();if(part.done)break;for(const b of part.value){checksum=Math.imul(checksum^b,16777619)>>>0;if(b===10)lines++;}}exports.push({format,bytes,elapsedMs,checksum,dataRows:format==='tsv'?lines:null});if(format==='tsv'&&lines!==count)throw Error('Truncated TSV');await dir.removeEntry(fileName);
+    const elapsedMs=performance.now()-at,stored=await handle.getFile();let checksum=2166136261,lines=0;const reader=stored.stream().getReader();while(true){const part=await reader.read();if(part.done)break;for(const b of part.value){checksum=Math.imul(checksum^b,16777619)>>>0;if(b===10)lines++;}}const zipIntegrity=format==='zip'?await verifyZip(stored):undefined;exports.push({format,bytes,elapsedMs,checksum,dataRows:format==='tsv'?lines:null,zipIntegrity});if(format==='tsv'&&lines!==count)throw Error('Truncated TSV');await dir.removeEntry(fileName);
   }}
   const d=performance.now();await s.delete(r.id);const deleteMs=performance.now()-d;s.close();
   return {generated,generationMs,writeWallMs,saved:{rows:saved.rows,bytes:saved.bytes,batches:saved.batches},profile:api.storageProfile??s.profile,queries,exports,origin:beforeDelete,liveIndexedDbFileLengths,deleteMs,userAgent:navigator.userAgent};
