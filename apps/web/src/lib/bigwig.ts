@@ -1,8 +1,9 @@
+import type { ResultSink } from "./result-store";
 import { AnalysisCache } from "./analysis-cache";
 import { readLocalText } from "./read-local-text";
 import { BigWig } from "@gmod/bbi";
 import { BlobFile } from "generic-filehandle2";
-import { buildLinks, importGenes, type Differential, type Parameters } from "./analysis";
+import { buildLinks, iterateLinks, importGenes, type Differential, type Parameters } from "./analysis";
 import type { GenomicScope, ExecutionLimits } from "./genomic-scope";
 
 export type BigWigRequest = {
@@ -68,7 +69,7 @@ export async function open(file: File, signal?: AbortSignal) {
   return { bw, header };
 }
 
-export async function runBigWigAnalysis(request: BigWigRequest, progress: (message: string) => void, cache?: AnalysisCache) {
+export async function runBigWigAnalysis(request: BigWigRequest, progress: (message: string) => void, cache?: AnalysisCache, sink?:ResultSink) {
   const { files, region, parameters } = request;
   if (!request.genomeAssembly.trim() || !request.normalization.trim() || !request.contrast.trim()) throw new Error("Genome assembly, normalization description, and explicit contrast are required.");
   if (!region.chrom || region.start < 0 || region.end <= region.start) throw new Error("Enter a valid 0-based half-open scan interval.");
@@ -122,12 +123,14 @@ export async function runBigWigAnalysis(request: BigWigRequest, progress: (messa
         log2fc: Math.log2((t + parameters.pseudocount) / (c + parameters.pseudocount)), se: null, pvalue: null, padj: null, baseMean: (c + t) / 2,
         source: "local BigWig gene-body integral", sourceId: gene.geneId, sourceCoordinates: "Gene annotation interval; descriptive integrated normalized signal" };
     });
-    const links = buildLinks(selectedGenes, geneStats, enhancers, parameters, { contrast: request.contrast, compatibility: { status: "Compatibility unverified", checks: [
+    const metadata = { contrast: request.contrast, compatibility: { status: "Compatibility unverified" as const, checks: [
       { name: "Genome assembly", status: "unverified", detail: `${request.genomeAssembly}; selected by user, not embedded in BigWig header` },
       { name: "Normalization", status: "unverified", detail: request.normalization },
       { name: "Inferential statistics", status: "unavailable", detail: "Averaged tracks do not provide valid differential p-values." },
-    ] }, morphologyById, source: "bigwig" });
-    return { genes: selectedGenes, enhancers, geneStats, links, validation: { mode: "BigWig-only descriptive", genomeAssembly: request.genomeAssembly,
+    ] }, morphologyById, source: "bigwig" as const };
+    const links = sink ? [] : buildLinks(selectedGenes,geneStats,enhancers,parameters,metadata);
+    const pairCount=sink?await sink.partition(region.chrom,{genes:selectedGenes,geneStats,enhancers,chromosomeSizes:{[region.chrom]:refInfo.length}},iterateLinks(selectedGenes,geneStats,enhancers,parameters,{...metadata,maxLinks:Number.MAX_SAFE_INTEGER})):links.length;
+    return { genes: selectedGenes, enhancers, geneStats, links, validation: { pairCount,geneRows:selectedGenes.length,enhancerRows:enhancers.length,persisted:!!sink,mode: "BigWig-only descriptive", genomeAssembly: request.genomeAssembly,
       region, inputFileBytes: Object.values(files).reduce((sum, file) => sum + file.size, 0) + request.annotationFile.size, indexedBytesEstimated: rangeBytes.reduce((a, b) => a + b, 0),
       featureBlockCounts: { controlPlus: cpBlocks.length, controlMinus: cmBlocks.length, treatmentPlus: tpBlocks.length, treatmentMinus: tmBlocks.length },
       maxIntervalBases: parameters.maxGenomeBases, normalization: request.normalization, chromosomeDictionaryAgreement: true, chromosomeSizes:{[region.chrom]:refInfo.length}, pValuesProduced: false,

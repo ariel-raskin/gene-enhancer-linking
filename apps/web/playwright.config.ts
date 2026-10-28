@@ -5,6 +5,7 @@ const localChrome = process.env.GEL_CHROME_PATH;
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  workers: 1, // Local storage benchmarks must not compete for origin/disk and device memory.
   reporter: "list",
   use: {
     ...devices["Desktop Chrome"],

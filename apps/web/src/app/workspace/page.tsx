@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PARAMETERS, type Compatibility, type Link, type Parameters } from "@/lib/analysis";
+import SavedResults from "@/components/saved-results";
 import ExperimentWorkspace from "@/components/experiment-workspace";
 import { proposeContrasts } from "@/lib/experiment";
 import type { ExportInput } from "@/lib/exports";
@@ -211,6 +212,7 @@ export default function WorkspacePage() {
     enhancers: result.enhancers.filter((enhancer) => visible.some((link) => link.enhancer_id === enhancer.featureId)) } : null;
 
   return <main className="workspace-wrap">
+    {!experimentMode&&<SavedResults/>}
     <div className="workspace-title"><div><div className="eyebrow">LOCAL ANALYSIS WORKSPACE</div><h1>Analyze processed PRO-seq data</h1><p>Files are read in your browser. GEL does not send selected files or generated genomic results to a server.</p></div><span className="pill pill-blue">Worker-based · no upload endpoint</span></div>
     <div className="disclaimer"><strong>Research interpretation:</strong> response concordance nominates candidate associations. It does not prove direct causal regulation. BigWig ratios are descriptive and never produce p-values.</div>
     <div className={`workspace-grid ${experimentMode ? "experiment-grid" : ""}`}>

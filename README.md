@@ -68,6 +68,14 @@ Choose **Organize as experiment**, confirm your track/annotation metadata, set *
 
 Read [v0.5 methodology and limits](docs/chunked-bigwig-v0.5.md) and [validation](docs/chunked-bigwig-v0.5-validation.md). A real chromosome and a more restrictive whole-annotation workload completed; default whole-genome outputs exceeded the explicit retention budget. This is not unrestricted genome-wide capacity. Resource estimates exclude native/parser memory. The old Python demo CLI has distinct discovery definitions; the independent Web-contract Python oracle is documented separately.
 
+## Persistent experiment results (v0.6)
+
+Experiment runs now write candidate batches to browser-local IndexedDB and query pages of at most 100 rows. Saved results can reopen after reload without reselecting source files; resuming interrupted analysis is not supported. Gene/enhancer drilldowns, contrast, evidence, coordinate, morphology and statistical-availability filters preserve the underlying saved set.
+
+**Save ZIP directly to disk** streams ZIP64 output through a browser file handle on supported browsers. Ordinary downloads are explicitly limited to a 64 MiB whole-Blob fallback. Stored results are subject to browser quota/eviction and are not guaranteed permanent. Export important runs and delete unneeded local results through the workspace. Private/local data never go to an analysis backend.
+
+Read [v0.6 architecture and limits](docs/persistent-results-v0.6.md) and [validation](docs/persistent-results-v0.6-validation.md). Browser storage overhead and host resource pressure still limit dense workloads; chromosome/genome scopes do not promise unlimited capacity. The legacy simple view retains its original in-memory limits.
+
 ## Development
 
 ```bash

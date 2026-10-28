@@ -29,7 +29,7 @@ export type ContrastStatus = "pending" | "running" | "successful" | "failed" | "
 export type Outcome = { contrastId: string; status: ContrastStatus; findings: string[]; result?: ExportInput; elapsedMs?: number; resultBytes?: number };
 export type ExperimentLink = Link & { experiment_id: string; contrast_id: string; candidate_id: string; control_condition: string; treatment_condition: string; perturbation: string; time_point: string; genome_assembly: string; control_sample_ids: string; treatment_sample_ids: string; control_track_sample_ids:string; treatment_track_sample_ids:string; evidence_layer: string };
 export const MAX_CONTRASTS = 24;
-export const GEL_VERSION = "0.5.0";
+export const GEL_VERSION = "0.6.0";
 export const MAX_EXPERIMENT_ROWS = 200_000;
 export const MAX_RESULT_BYTES = 128 * 1024 * 1024;
 export const fileKey = (f: ImportedFile) => `${f.path.replaceAll("\\", "/")}:${f.file.size}:${f.file.lastModified}`;

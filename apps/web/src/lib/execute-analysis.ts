@@ -1,5 +1,6 @@
+import type { ResultSink, ResultPartition } from "./result-store";
 import {
-  buildLinks, compareChromosomes, importEnrsaEnhancers, importEnrsaGenes, inspectEnrsaOptionalInputs,
+  buildLinks, iterateLinks, compareChromosomes, importEnrsaEnhancers, importEnrsaGenes, inspectEnrsaOptionalInputs,
   importGeneDifferential, importGenes, importRDeSeqEnhancers, importRFilteredBed, type Parameters, type Gene, type Differential,
 } from "./analysis";
 import { runChunkedBigWigAnalysis, ChunkCache } from "./chunked-bigwig";
@@ -30,7 +31,14 @@ function scopeFeatures(genes:Gene[],stats:Differential[],enhancers:Differential[
   return {genes:selected,stats:stats.filter(s=>ids.has(s.featureId)),enhancers:enhancers.filter(e=>e.chrom===scope.chrom&&e.end>scope.start&&e.start<scope.end)};
 }
 
-export async function executeAnalysis(req: AnalysisRequest, report: (message: string) => void = () => {}, cache?: AnalysisCache, signal?: AbortSignal, chunkCache?: ChunkCache) {
+async function persistFeatures(sink:ResultSink,features:ResultPartition,params:Parameters,metadata:{contrast:string;compatibility:import("./analysis").Compatibility;source:"differential"}){
+ for(const chrom of [...new Set([...features.genes.map(g=>g.chrom),...features.enhancers.map(e=>e.chrom)])].sort()){
+  const genes=features.genes.filter(g=>g.chrom===chrom),stats=features.geneStats.filter(s=>s.chrom===chrom),enhancers=features.enhancers.filter(e=>e.chrom===chrom);
+  await sink.partition(chrom,{genes,geneStats:stats,enhancers,secondaryGeneStats:features.secondaryGeneStats?.filter(s=>s.chrom===chrom)},iterateLinks(genes,stats,enhancers,params,{...metadata,maxLinks:Number.MAX_SAFE_INTEGER}));
+ }
+}
+
+export async function executeAnalysis(req: AnalysisRequest, report: (message: string) => void = () => {}, cache?: AnalysisCache, signal?: AbortSignal, chunkCache?: ChunkCache, sink?:ResultSink) {
   const read = (file: File) => cache ? cache.readText(file) : readLocalText(file);
   const started = performance.now();
     let result;
@@ -53,7 +61,8 @@ export async function executeAnalysis(req: AnalysisRequest, report: (message: st
         { name: "Contrast and model provenance", status: "unverified", detail: req.metadata.model.trim() ? `User declared contrast ${req.metadata.contrast}; verify against source analysis_summary/design table.` : "Model and contrast provenance missing." },
       ] };
       const scoped=scopeFeatures(imported.genes,imported.stats,enhancers,req.scope,req.parameters.maxDistanceBp);
-      const links = buildLinks(scoped.genes, scoped.stats, scoped.enhancers, req.parameters, { contrast: req.metadata.contrast, compatibility, source: "differential" });
+      const links = sink ? [] : buildLinks(scoped.genes, scoped.stats, scoped.enhancers, req.parameters, { contrast: req.metadata.contrast, compatibility, source: "differential" });
+      if(sink)await persistFeatures(sink,{genes:scoped.genes,geneStats:scoped.stats,enhancers:scoped.enhancers,secondaryGeneStats:promoter},req.parameters,{contrast:req.metadata.contrast,compatibility,source:"differential"});
       result = { ...imported, genes:scoped.genes, enhancers:scoped.enhancers, geneStats: scoped.stats, secondaryGeneStats: promoter, links, validation: { mode: "eNRSA differential tables", genomeAssembly: req.metadata.assembly,
         contrast: req.metadata.contrast, statisticalModel: req.metadata.model, geneRows: imported.genes.length, enhancerRows: enhancers.length,
         unmatchedGeneDifferentialRows: imported.unmatchedDifferentialRows.length, pairCount: links.length, pValuesProduced: true,
@@ -78,7 +87,8 @@ export async function executeAnalysis(req: AnalysisRequest, report: (message: st
         { name: "Contrast and model provenance", status: "unverified", detail: req.metadata.model.trim() ? `User declared ${req.metadata.contrast}; verify against source model metadata.` : "Model and contrast provenance missing." },
       ] };
       const scoped=scopeFeatures(genes,differential.stats,[...enhancers,...additions],req.scope,req.parameters.maxDistanceBp);
-      const links = buildLinks(scoped.genes, scoped.stats, scoped.enhancers, req.parameters, { contrast: req.metadata.contrast, compatibility, source: "differential" });
+      const links = sink ? [] : buildLinks(scoped.genes, scoped.stats, scoped.enhancers, req.parameters, { contrast: req.metadata.contrast, compatibility, source: "differential" });
+      if(sink)await persistFeatures(sink,{genes:scoped.genes,geneStats:scoped.stats,enhancers:scoped.enhancers},req.parameters,{contrast:req.metadata.contrast,compatibility,source:"differential"});
       result = { genes:scoped.genes, enhancers: scoped.enhancers, geneStats: scoped.stats, links, validation: { mode: "eRNA_diff R-DESeq2", genomeAssembly: req.metadata.assembly,
         contrast: req.metadata.contrast, statisticalModel: req.metadata.model, geneRows: genes.length, geneRowsWithEffects: differential.stats.length,
         unmatchedGeneDifferentialRows: differential.unmatchedRows.length, enhancerDifferentialRows: enhancers.length, correctedSAFBedRows: additions.length,
@@ -87,9 +97,12 @@ export async function executeAnalysis(req: AnalysisRequest, report: (message: st
           "No eRNA-diff p-values are inferred for additional filtered BED features without a matched differential result."], elapsedMs: Math.round(performance.now() - started) } };
     } else {
       report("Querying local indexed BigWig blocks in the worker.");
-      result = req.request.genomicScope ? await runChunkedBigWigAnalysis(req.request, report, signal, chunkCache) : await runBigWigAnalysis(req.request, (message) => report(message), cache);
+      result = req.request.genomicScope ? await runChunkedBigWigAnalysis(req.request, report, signal, chunkCache, sink) : await runBigWigAnalysis(req.request, (message) => report(message), cache, sink);
       result.validation.elapsedMs = Math.round(performance.now() - started);
     }
+  if(sink){
+    return {genes:[],enhancers:[],geneStats:[],secondaryGeneStats:[],links:[],validation:{...result.validation,...(req.kind!=="bigwig"?{geneRows:result.genes.length,enhancerRows:result.enhancers.length,regionalScope:req.scope}:{}),persisted:true}};
+  }
   if (req.scope && req.kind !== "bigwig") {
     return {...result,validation:{...result.validation,geneRows:result.genes.length,enhancerRows:result.enhancers.length,pairCount:result.links.length,regionalScope:req.scope}};
   }
