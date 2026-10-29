@@ -97,3 +97,7 @@ GitHub Actions runs Python checks and web lint, typecheck, unit tests, Playwrigh
 ## Research-prototype provenance
 
 The original HEL RUNX1/BCOR analysis remains in its separate HPC and Dropbox workspaces. Its evidence tiers, coordinate decisions, and limitations informed this migration, but no HEL sequencing data or private annotations are committed here. Earlier prototype versions and the negative K562 benchmark result remain preserved in the lab workspace. This repository is a clean public implementation baseline, not a wholesale copy of private research outputs.
+
+## Embedded locus viewer (v0.7 development preview)
+
+An experimental saved-result viewer is under development on the feature branch. It reads original local BigWigs, displays bounded signal, saved gene/candidate coordinates and evidence-colored arcs, and requires source relinking after a browser restart. It is not yet a validated production release; see [viewer methodology and release gates](docs/locus-viewer-v0.7.md).
